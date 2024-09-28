@@ -680,7 +680,7 @@ k95g:
 wcos2:
 	$(MAKE) -f ckoker.mak os232 \
 	    CMP="OWWCL" \
-	    CC="wcl386" \
+	    CC="wcl386 -zq" \
 !if "$(CKB_STATIC_CRT_OS2)"=="yes"
         CC2="-Fh" \
 !else
@@ -690,7 +690,7 @@ wcos2:
 	    OPT="-obmiler" \
         DEBUG="-DNDEBUG" \
         DLL="-bd -sg" \
-	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
+	    CFLAGS="-zp=1 -bm -bt=os2 -aa" \
         LDFLAGS="" \
         PLATFORM="OS2" \
         NOLINK="-c" \
@@ -705,7 +705,7 @@ wcos2:
 wcos2d:
 	$(MAKE) -f ckoker.mak os232 \
 	    CMP="OWWCL" \
-	    CC="wcl386" \
+	    CC="wcl386 -zq" \
 !if "$(CKB_STATIC_CRT_OS2)"=="yes"
         CC2="-Fh -d3" \
 !else
@@ -715,7 +715,7 @@ wcos2d:
 	    OPT=" " \
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
-	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
+	    CFLAGS="-zp=1 -bm -bt=os2 -aa" \
         LDFLAGS="" \
         PLATFORM="OS2" \
         NOLINK="-c" \
@@ -905,7 +905,7 @@ COMMODE_OBJ = commode.obj
 
 !ifdef PLATFORM
 !if "$(PLATFORM)" == "OS2"
-LIBS = os2386.lib rexx.lib
+LIBS = rexx.lib
 
 # Open Watcom doesn't have bigmath.lib
 #  -> this likely comes from the SRP distribution (srp\srp-1.4\cryptolib_1.1\VISUALC\BIGMATH)
@@ -1806,7 +1806,7 @@ ckon30.obj: ckonov.c ckotcp.h
 
 ckoker.res: ckoker.rc k95f_os2.ico
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoker.rc
+        wrc -q -r -bt=os2 ckoker.rc
 !else
         rc -r ckoker.rc
 !endif
@@ -1862,7 +1862,7 @@ ckopcf.res: ckopcf.rc ckopcf.h
 
 ckoclip.res: ckoclip.rc ckoclip.h ckoclip.ico
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoclip.rc
+        wrc -q -r -bt=os2 ckoclip.rc
 !else
         rc -r ckoclip.rc
 !endif

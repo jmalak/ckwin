@@ -36,6 +36,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_status.h"
 #include "pdll_common.h"
 #include "pdll_defs.h"
 #include "pdll_dev.h"
@@ -115,6 +116,7 @@ rz_file_info()
   time_t time_started;
   time_t time_now;
   time_t time_last_zrinit = 0;	/* Just to shut up the compiler */
+  status_args stargs;
 
   time(&time_started);
   time_last_zrinit = time_started; /* To prevent us from timeoutting */
@@ -122,12 +124,12 @@ rz_file_info()
   while (1) {
     time(&time_now);
     if (time_now - time_started >= 40) {
-      if (p_cfg->status_func(PS_TIMEOUT, 40))
+      if (p_cfg->status_func(PS_TIMEOUT,ST(40)))
 	user_aborted();
       pdll_aborted = A_MISC;
       return;
     } else if (time_now - time_last_zrinit >= 10) {
-      if (p_cfg->status_func(PS_TIMEOUT, 10))
+      if (p_cfg->status_func(PS_TIMEOUT,ST(10)))
 	user_aborted();
       send_zrinit = 1;
     }
@@ -136,11 +138,11 @@ rz_file_info()
       time_last_zrinit = time_now;
       if (use_alternative_checking) {
 	tx_hdr[ZF0] = CANFDX | CANOVIO;
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
+	if (p_cfg->status_func(PS_CHECKING_METHOD,ST(CHECKING_CRC16)))
 	  user_aborted();
       } else {
 	tx_hdr[ZF0] = CANFC32 | CANFDX | CANOVIO;
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC32))
+	if (p_cfg->status_func(PS_CHECKING_METHOD,ST(CHECKING_CRC32)))
 	  user_aborted();
       }
       if (esc_control)
@@ -154,7 +156,9 @@ rz_file_info()
       *(U32 *)tx_hdr = 0;
     }
     c = z_get_header();
-    if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+	stargs.arg0 = outheader(c);
+	stargs.arg1 = *(U32 *)rx_hdr;
+    if (p_cfg->status_func(PS_Z_HEADER,&stargs))
       user_aborted();
 
     switch (c) {
@@ -171,7 +175,7 @@ rz_file_info()
       remote_zmanag = rx_hdr[ZF1];
       remote_ztrans = rx_hdr[ZF2];
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
+      if (p_cfg->status_func(PS_Z_FRAME_END,ST(outframe(c))))
 	user_aborted();
       switch (c) {
       case GOTCRCW:		/* Got what we wanted */
@@ -210,7 +214,7 @@ rz_file_info()
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END,ST(outframe(c))))
 	  user_aborted();
 	*(U32 *)tx_hdr = 0L;
 	z_send_hex_header(ZNAK);
@@ -231,12 +235,12 @@ rz_file_info()
 	esc_control = 1;
       if (rx_hdr[ZF0] & TESC8)
 	esc_8th_bit = 1;
-      if (p_cfg->status_func(PS_Z_SENDER_FLAGS, rx_hdr[ZF0]))
+      if (p_cfg->status_func(PS_Z_SENDER_FLAGS,ST(rx_hdr[ZF0])))
 	user_aborted();
       
       rx_buf_size = 32;
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
+      if (p_cfg->status_func(PS_Z_FRAME_END,ST(outframe(c))))
 	user_aborted();
       rx_buf_size = 1024;
       switch (c) {
@@ -264,7 +268,7 @@ rz_file_info()
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END,ST(outframe(c))))
 	  user_aborted();
 	*(U32 *)tx_hdr = 0L;
 	z_send_hex_header(ZNAK);
@@ -283,17 +287,19 @@ rz_file_info()
 
     case ZCOMMAND:
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
+      if (p_cfg->status_func(PS_Z_FRAME_END,ST(outframe(c))))
 	user_aborted();
       *(U32 *)tx_hdr = 0L;
       switch (c) {
       case GOTCRCW:
-	if (p_cfg->status_func(PS_Z_COMMAND, rx_buf))
+	if (p_cfg->status_func(PS_Z_COMMAND,ST(rx_buf)))
 	  user_aborted();
 	for (retry_cnt = 0; retry_cnt < 10; retry_cnt++) {
 	  z_send_hex_header(ZCOMPL);
 	  c = z_get_header();
-	  if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+	  stargs.arg0 = outheader(c);
+	  stargs.arg1 = *(U32 *)rx_hdr;
+	  if (p_cfg->status_func(PS_Z_HEADER,&stargs))
 	    user_aborted();
 	  switch (c) {
 	  case ZCAN:
@@ -306,7 +312,9 @@ rz_file_info()
 	    return;
 
 	  default:
-	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+	    stargs.arg0 = outheader(c);
+	    stargs.arg1 = *(U32 *)rx_hdr;
+	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER,&stargs))
 	      user_aborted();
 	    break;
 	  }
@@ -326,7 +334,7 @@ rz_file_info()
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END,ST(outframe(c))))
 	  user_aborted();
 	*(U32 *)tx_hdr = 0L;
 	z_send_hex_header(ZNAK);
@@ -349,7 +357,9 @@ rz_file_info()
       return;
       
     default:
-      if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+	  stargs.arg0 = outheader(c);
+	  stargs.arg1 = *(U32 *)rx_hdr;
+      if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER,&stargs))
 	user_aborted();
       break;
     }
@@ -369,6 +379,7 @@ rz_file()
     U32 ret_val = 0;
     time_t t_prev = 0;
     time_t t_now;
+    status_args stargs;
 
     offset = 0;
     retransmits = 0;
@@ -379,11 +390,13 @@ rz_file()
 	return(1);
     while (!bail) {
 	c = z_get_header();
-	if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+	stargs.arg0 = outheader(c);
+	stargs.arg1 = *(U32 *)rx_hdr;
+	if (p_cfg->status_func(PS_Z_HEADER,&stargs))
 	    user_aborted();
 	if (c == ZEOF) {
 	    if (*(U32 *)rx_hdr != offset) {
-		if (p_cfg->status_func(PS_Z_PHONY_ZEOF))
+		if (p_cfg->status_func(PS_Z_PHONY_ZEOF,NULL))
 		    user_aborted();
 		continue;
 	    }
@@ -395,7 +408,7 @@ rz_file()
 		if (t_now - t_prev >= 180) {	     /* We've got non-ZDATA headers */
 		    /* for 3 minutes, it's time to */
 		    /* call quits */
-		    if (p_cfg->status_func(PS_TIMEOUT, 180))
+		    if (p_cfg->status_func(PS_TIMEOUT,ST(180)))
 			user_aborted();
 		    pdll_aborted = A_MISC;
 		    ret_val = 1;
@@ -408,7 +421,9 @@ rz_file()
 	switch (c) {
 	case ZDATA:
 	    if (*(U32 *)rx_hdr != offset) {
-		if (p_cfg->status_func(PS_Z_DATA_FROM_INVALID_POS, *(U32 *)rx_hdr, offset))
+		stargs.arg0 = *(U32 *)rx_hdr;
+		stargs.arg1 = offset;
+		if (p_cfg->status_func(PS_Z_DATA_FROM_INVALID_POS,&stargs))
 		    user_aborted();
 		z_send_attn();
 		*(U32 *)tx_hdr = offset;
@@ -417,10 +432,10 @@ rz_file()
 	    }
 	    bail_from_block_loop = 0;
 	    while (!bail_from_block_loop) {
-		if (p_cfg->status_func(PS_PROGRESS, offset))
+		if (p_cfg->status_func(PS_PROGRESS,ST(offset)))
 		    user_aborted();
 		c = z_recv_block();
-		if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
+		if (p_cfg->status_func(PS_Z_FRAME_END,ST(outframe(c))))
 		    user_aborted();
 
 		/* Note the continue keywords in following switch () thing */
@@ -480,7 +495,7 @@ rz_file()
 		    break;
 		}
 	    }
-	    if (p_cfg->status_func(PS_PROGRESS, offset))
+	    if (p_cfg->status_func(PS_PROGRESS,ST(offset)))
 		user_aborted();
 	    break;
 
@@ -503,7 +518,9 @@ rz_file()
 	    break;
 
 	default:
-	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+		stargs.arg0 = outheader(c);
+		stargs.arg1 = *(U32 *)rx_hdr;
+	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER,&stargs))
 		user_aborted();
 	    break;
 	}

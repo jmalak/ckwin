@@ -67,10 +67,10 @@ WNT_CON_LIBS=libc.lib kernel32.lib w32_zil.lib ndirect.lib nservice.lib nstorage
 
 # ----- OS/2 compiler options -----------------------------------------------
 !if "$(CMP)" == "OWWCL"
-OS2_CPP=wpp386
-OS2_LINK=wlink
-OS2_LIBRARIAN=wlib
-OS2_RC=wrc
+OS2_CPP=wpp386 -zq
+OS2_LINK=wlink op q
+OS2_LIBRARIAN=wlib -zq
+OS2_RC=wrc -q
 !else
 OS2_CPP=icc
 OS2_LINK=ilink

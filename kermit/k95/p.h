@@ -31,6 +31,7 @@
 #define _P_H_
 
 #include "p_type.h"             /* U32, U16, U8, etc typedefs */
+#include "p_status.h"
 
 #ifdef __EMX__
 #define CKDEVAPI

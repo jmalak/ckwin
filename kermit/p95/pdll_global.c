@@ -33,7 +33,6 @@
 #endif 
 #include <stdio.h>
 #include <time.h>
-#include "p_type.h"
 #include "p.h"
 
 P_CFG *p_cfg;

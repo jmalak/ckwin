@@ -31,6 +31,7 @@
 #define _P_H_
 
 #include "p_type.h"             /* U32, U16, U8, etc typedefs */
+#include "p_status.h"
 
 #ifdef __EMX__
 #define _System                 /* EMX/GCC doesn't have _System */
@@ -1035,7 +1036,7 @@ typedef struct _P_CFG {
    functions.
 */
 
-  U32 (* _System status_func)(U32, ...);
+  U32 (* _System status_func)(U32,status_args *);
 /*
    This function is called to inform the calling program about
    progress of file transfer.

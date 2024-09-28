@@ -8155,7 +8155,7 @@ shossh() {
          * want to output them separately. The array is terminated with an
          * entry that has its type set to SSH_PORT_FORWARD_NULL.
          */
-        ssh_port_forward_t* fwd = ssh_fwd_get_ports();
+        const ssh_port_forward_t* fwd = ssh_fwd_get_ports();
 
         if (fwd != NULL) {
             int i = 0;

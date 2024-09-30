@@ -790,12 +790,12 @@ DEFINES = -DOS2 -DDYNAMIC -DKANJI -DTCPSOCKET \
 K95BUILD = K95
 !endif
 !if "$(K95BUILD)" == "TLSONLY"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
+DEFINES = -DNT -DWINVER=0x0400 -DOS2 -DNOSSH \
           -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
           -DNETFILE -DONETERMUPD -DNO_ENCRYPTION -DZLIB \
           -DNO_SRP -DNO_KERBEROS -DBETATEST -DNOCKXYZ
 !else if "$(K95BUILD)" == "UIUC"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
+DEFINES = -DNT -DWINVER=0x0400 -DOS2 -DNOSSH \
           -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
           -DNETFILE -DONETERMUPD -DZLIB \
           -DNOXFER -DNODIAL -DNOHTTP -DNOFORWARDX -DNOBROWSER -DNOLOGIN \
@@ -803,7 +803,7 @@ DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
           -DNOSOCKS -DNONETCMD -DNO_SRP -DNO_SSL -DNOFTP -DBETATEST \
           -DNODEBUG -DCK_TAPI -DNOPUSH -DNO_COMPORT -DNOXMIT -DNOSCRIPT -DNO_KERBEROS -DNOCKXYZ
 !else if "$(K95BUILD)" == "IKSD"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH -DONETERMUPD -DUSE_STRERROR \
+DEFINES = -DNT -DWINVER=0x0400 -DOS2 -DNOSSH -DONETERMUPD -DUSE_STRERROR \
           -DDYNAMIC -DKANJI -DNETCONN -DIKSDONLY -DZLIB \
           -DHADDRLIST -DCK_LOGIN \
           -DNO_SRP -DNO_KERBEROS -DNOCKXYZ
@@ -815,16 +815,16 @@ DEFINES = -DNT -DWINVER=0x0400 -DOS2 -D_CRT_SECURE_NO_DEPRECATE -DUSE_STRERROR\
           -DNETFILE -DONETERMUPD  \
           -DNEWFTP -DBETATEST -DNO_DNS_SRV \
           $(ENABLED_FEATURE_DEFS) $(DISABLED_FEATURE_DEFS)
-!if "$(CMP)" != "OWCL"
-DEFINES = $(DEFINES) -D__STDC__
 !endif
+!if ( "$(CMP)" != "OWCL" ) && ( "$(CMP)" != "OWWCL" )
+DEFINES = $(DEFINES) -D__STDC__
 !endif
 !endif
 !else
 ! ERROR Macro named PLATFORM undefined
 !endif
 
-!if "$(CMP)" == "OWCL"
+!if ( "$(CMP)" == "OWCL" ) || ( "$(CMP)" == "OWWCL" )
 # Watcom was the full path to commode.obj - its not enough for it to
 # be on the library path.
 COMMODE_OBJ = $(WATCOM)\lib386\nt\commode.obj
@@ -834,11 +834,11 @@ COMMODE_OBJ = commode.obj
 
 !ifdef PLATFORM
 !if "$(PLATFORM)" == "OS2"
-LIBS = os2386.lib rexx.lib
+LIBS = rexx.lib
 
 # Open Watcom doesn't have bigmath.lib
 #  -> this likely comes from the SRP distribution (srp\srp-1.4\cryptolib_1.1\VISUALC\BIGMATH)
-!if "$(CMP)" != "OWCL"
+!if ( "$(CMP)" != "OWCL" ) && ( "$(CMP)" != "OWWCL" )
 LIBS = $(LIBS) bigmath.lib
 !endif
 

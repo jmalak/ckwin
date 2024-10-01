@@ -2867,7 +2867,7 @@ _PROTOTYP( int docd, (int) );
 _PROTOTYP( int doclslog, (int) );
 _PROTOTYP( int docmd, (int) );
 _PROTOTYP( int dodir, (int) );
-_PROTOTYP( int dodo, (int, char *, int) );
+_PROTOTYP( int dodo, (int, const char *, int) );
 _PROTOTYP( int doenable, (int, int) );
 _PROTOTYP( int dogoto, (char *, int) );
 _PROTOTYP( int dogta, (int) );

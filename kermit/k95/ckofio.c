@@ -4746,7 +4746,8 @@ zstrdt(date,len) char * date; int len; {
     /* time_t is a 64bit value on Visual C++ 2005 and newer on 64bit windows. */
     time_t tmx=0;
 #else /* NT */
-    long tmx=0;
+/*    long tmx=0; */
+    time_t tmx=0;
 #endif /* NT */
 #endif
     long days;

@@ -9733,9 +9733,9 @@ incvar(s,x,z) char *s; CK_OFF_T x; int z;
 */
 int
 #ifdef CK_ANSIC
-dodo( int x, char *s, int flags )
+dodo( int x, const char *s, int flags )
 #else
-dodo(x,s,flags) int x; char *s; int flags;
+dodo(x,s,flags) int x; const char *s; int flags;
 #endif /* CK_ANSIC */
 {
     int y;

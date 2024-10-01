@@ -3075,11 +3075,11 @@ static int nsplitbuf = 0;
 
 struct stringarray *
 #ifdef CK_ANSIC
-cksplit(int fc,int n1,char * s1,char * s2,char * s3,
+cksplit(int fc,int n1,const char * s1,const char * s2,const char * s3,
     int n2,int n3,int n4,int n5)
 #else
 cksplit(fc,n1,s1,s2,s3,n2,n3,n4,n5)
-    int fc,n1,n2,n3,n4,n5; char *s1, *s2, *s3; 
+    int fc,n1,n2,n3,n4,n5; const char *s1, *s2, *s3; 
 #endif /* CK_ANSIC */
 {
     int splitting = 0;			/* What I was asked to do */

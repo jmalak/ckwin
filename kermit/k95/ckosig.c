@@ -68,11 +68,11 @@ cc_execute( jmp_buf * sj_buf, ck_sigfunc dofunc, ck_sigfunc failfunc )
     CreateCtrlCMuxWait( ccindex, hevThread ) ;
 
     /* begin new thread with dofunc                    */
-    tidThread = (TID) _beginthread( dofunc,
-                                                                         #ifndef NT
-                                                                          0,
-                                                                         #endif /* NT */
-                                                                          THRDSTKSIZ, (void *) &hevThread ) ;
+#ifdef NT
+    tidThread = (TID) _beginthread( dofunc, THRDSTKSIZ, (void *)&hevThread ) ;
+#else
+    tidThread = (TID) _beginthread( dofunc, NULL, THRDSTKSIZ, (void *)&hevThread ) ;
+#endif /* NT */
 
     /* wait for the event semaphore or Ctrl-C          */
     /*    semaphore to be set                          */

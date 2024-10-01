@@ -1614,11 +1614,11 @@ os2_netopen(name, lcl, nett) char *name; int *lcl, nett; {
         ttyfd = 999;
 
         /* Start reading from pipe */
-        _beginthread( NetCmdReadThread,
-#ifndef NT
-                     0,
+#ifdef NT
+        _beginthread( NetCmdReadThread, 65536, hChildStdoutRdDup );
+#else
+        _beginthread( NetCmdReadThread, NULL, 65536, hChildStdoutRdDup );
 #endif /* NT */
-                     65536, (void *)hChildStdoutRdDup );
         rc = 0;
     }
 #endif /* NETCMD */

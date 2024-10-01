@@ -105,7 +105,7 @@ char * parnam( char c );
 char * hhmmss ( long x );
 char * ulongtohex( unsigned long z, int n );
 int ckhexbytetoint( char * s );
-struct stringarray * cksplit(int fc,int n1,char * s1,char * s2,char * s3,
+struct stringarray * cksplit(int fc,int n1,const char * s1,const char * s2,const char * s3,
                              int n2,int n3,int n4,int n5);
  
 /* PROTOTYPES ADDED 24 March 2023... */
@@ -471,7 +471,7 @@ long pty_open_ctty( char *, int *, int );
 long pty_open_slave( char *, int *, int );
 long tod2sec( char * );
 struct passwd * sgetpwnam( char * );
-struct stringarray * cksplit( int,int,char *, char *,char *, int,int,int,int );
+struct stringarray * cksplit( int,int,const char *,const char *,const char *, int,int,int,int );
 struct zfnfp * zfnqfp( char *, int, char * );
 time_t zstrdt( char *, int );
 unsigned int chk2( register CHAR *, register int );

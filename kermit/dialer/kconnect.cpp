@@ -3116,7 +3116,7 @@ ReadManual(void)
 void K_CONNECTOR::
 ExecuteBrowser( void * _object )
 {
-    char * url = (char *) _object;
+    char * url = (char *)_object;
     system(url);
 }
 

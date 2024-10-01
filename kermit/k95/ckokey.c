@@ -1190,12 +1190,11 @@ putkverb( int kmode, int k ) {
             if ( kc ) {
                 kc->kmode = kmode;
                 kc->km = km;
-                _beginthread(&kverb_thread,
-#ifndef NT
-                              0,
-#endif /* NT */
-                              65536,
-                              (void *)kc);
+#ifdef NT
+                _beginthread(&kverb_thread, 65536, (void *)kc);
+#else
+                _beginthread(&kverb_thread, NULL, 65536, (void *)kc);
+#endif
                 return 0;
             }
         }

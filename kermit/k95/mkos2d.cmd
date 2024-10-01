@@ -10,6 +10,7 @@ REM And also modified and run setenv.cmd to add \kermit\k95 to the include path
 
 mkdir os2
 move os2\*.obj . > nul
-del ckcmai.obj ckuus5.obj
+if exists ckcmai.obj del ckcmai.obj
+if exists ckuus5.obj del ckuus5.obj
 wmake -h -ms -f ckoker.mak PLATFORM=OS2 MAKE="wmake -h -ms" wcos2d
 move *.obj os2  > nul

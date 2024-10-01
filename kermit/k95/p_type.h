@@ -95,4 +95,22 @@ typedef long APIRET ;
 #define _PROTOTYP( func, parms ) func()
 #endif /* CK_ANSIC */
 #endif /* _PROTOTYP */
+
+typedef union tag_stvalue {
+    U32     val;
+    void    *ptr;
+} stvalue;
+
+typedef struct tag_status_args {
+    U32         arg0;
+    U32         arg1;
+    U32         arg2;
+    U32         arg3;
+    stvalue     arg4;
+} status_args;
+
+#define STDATA(x)   ((status_args *)(x))
+#define STVAL(x)    (U32)(x)
+#define STPTR(x)    (void *)(x)
+
 #endif /* _TYPEDEFS_H_ */

@@ -10236,7 +10236,7 @@ doshift(n) int n;
             toparg[i] = NULL;
 #else
             makestr(&(toparg[i]),NULL);
-#endif /* COMMENt */
+#endif /* COMMENT */
             if (i < 10)
               makestr(&(g_var[i+'0']),NULL);
         } else {
@@ -10244,7 +10244,7 @@ doshift(n) int n;
             m_xarg[level][i] = NULL;
 #else
             makestr(&(m_xarg[level][i]),NULL);
-#endif /* COMMENt */
+#endif /* COMMENT */
             if (i < 10) {
                 buf[2] = (char)(i+'0');
                 delmac(buf,0);

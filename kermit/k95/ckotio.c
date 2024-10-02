@@ -379,11 +379,11 @@ Time functions
 #endif /* NETCONN */
 #endif /* DEVNAMLEN */
 
-/* definitions hiding 32-bit / 16-bit differences */
-
-#ifdef __32BIT__
+typedef ULONG U_INT;
 
 #ifndef NT
+#ifdef __32BIT__
+
 USHORT DosDevIOCtl32(PVOID pData, USHORT cbData, PVOID pParms, USHORT cbParms,
                      USHORT usFunction, USHORT usCategory, HFILE hDevice)
 {
@@ -392,9 +392,7 @@ USHORT DosDevIOCtl32(PVOID pData, USHORT cbData, PVOID pParms, USHORT cbParms,
                               pParms, cbParms, &ulParmLengthInOut,
                               pData, cbData, &ulDataLengthInOut);
 }
-#endif /* NT */
 
-typedef ULONG U_INT;
 #define FILEFINDBUF FILEFINDBUF3
 #define FSQBUFFER FSQBUFFER2
 
@@ -402,7 +400,8 @@ typedef ULONG U_INT;
         DosFindFirst(p1, p2, p3, p4, p5, p6, 1)
 
 #define DosDevIOCtl DosDevIOCtl32
-#endif
+#endif /* __32BIT__ */
+#endif /* NT */
 
 /* Declarations */
 

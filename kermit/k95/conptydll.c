@@ -37,9 +37,6 @@
  */
 
 // This DLL supports NT only so it always supports NT.
-#ifndef NT
-#define NT
-#endif
 
 //#define LOGGING
 

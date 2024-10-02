@@ -161,12 +161,12 @@ CKB_STATIC_CRT_NT = yes
 !message
 
 !if "$(PLATFORM)" == "NT"
-!if "$(CMP)" == "OWCL"
+!if ("$(CMP)" == "OWCL") || ("$(CMP)" == "OWWCL")
 
 # Standard windows headers from MinGW that don't come with Open Watcom:
 INCLUDE = $(INCLUDE);ow\;
 
-!endif   # EndIf CMP == OWCL
+!else   # CMP == OWCL
 
 !if ($(MSC_VER) < 80)
 !error Unsupported compiler version. Visual C++ 1.0 32-bit edition or newer required.
@@ -288,7 +288,8 @@ COMMON_CFLAGS = $(COMMON_CFLAGS) /EHs-c-
 # These are:    /EHs-c-     Enable C++ Exception handling (replaces /GX-)
 !endif  # EndIf MSC_VER < 140
 
-!endif  # EndIf PLATFORM  == NT
+!endif  # EndIf CMP == OWCL
+!endif  # EndIf PLATFORM == NT
 
 RCDEFINES=$(RC_FEATURE_DEFS) /dCOMPILER_$(CMP)
 !if "$(SSH_LIB)" == ""
@@ -336,7 +337,7 @@ telnet:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_WIN32 /D_CONSOLE /D__32BIT__ /W2" \
+    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_WIN32 /D_CONSOLE /W2" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -352,7 +353,7 @@ rlogin:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_WIN32 /D_CONSOLE /D__32BIT__ /W2" \
+    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_WIN32 /D_CONSOLE /W2" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -368,7 +369,7 @@ test:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_CONSOLE /D__32BIT__ /W2" \
+    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32=1 /D_CONSOLE /W2" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -383,7 +384,7 @@ winsetup:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /D_WIN32 /DOS2 /DNT /D_CONSOLE /D__32BIT__ /W2 /D_WIN32_WINNT=$(WIN32_VERSION)" \
+    CFLAGS=" $(COMMON_CFLAGS) /J /D_WIN32 /DOS2 /DNT /D_CONSOLE /W2 /D_WIN32_WINNT=$(WIN32_VERSION)" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -399,7 +400,7 @@ msvc:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /Fm /F65536" \
+    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /Fm /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -414,7 +415,7 @@ msvc-sshdll:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /Fm /F65536" \
+    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /Fm /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -427,7 +428,7 @@ msvc-sshdlld:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /Fm /F65536" \
+    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32=1 /D_WIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /Fm /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -443,7 +444,7 @@ msvc-iksd:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION)  /D_CONSOLE /D__32BIT__ /W2 /Fm /F65536" \
+    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION)  /D_CONSOLE /W2 /Fm /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -458,7 +459,7 @@ msvcd:
 	OPT="" \
     DEBUG="/Zi /Odi /Ge " \
     DLL="" \
-	CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF)  /GZ /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /F65536" \
+	CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF)  /GZ /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -474,7 +475,7 @@ msvcd-iksd:
 	OPT="" \
     DEBUG="/Zi /Odi /Ge " \
     DLL="" \
-	CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF)  /GZ /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /F65536" \
+	CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF)  /GZ /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -490,7 +491,7 @@ msvcmd:
 	OPT="" \
     DEBUG="/Zi /Odi /Ge -Dmalloc=dmalloc -Dfree=dfree -DMDEBUG" \
     DLL="" \
-	CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /F65536" \
+	CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -506,7 +507,7 @@ msvcp:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /Fm /F65536" \
+    CFLAGS=" $(COMMON_CFLAGS) /J /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /Fm /F65536" \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="/c" \
@@ -522,7 +523,7 @@ kuid:
 	OPT="" \
     DEBUG="/Zi /Odi" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DKUI /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 -I." \
+    CFLAGS=" $(COMMON_CFLAGS) $(CFLAG_GF) /J /DKUI /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 -I." \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -537,7 +538,7 @@ kui:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-	CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /I." \
+	CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /I." \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -553,7 +554,7 @@ k95gd:
 	OPT="" \
     DEBUG="/Zi /Odi" \
     DLL="" \
-    CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DK95G /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 -I." \
+    CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DK95G /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 -I." \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -568,7 +569,7 @@ k95g:
     OPT="$(COMMON_OPTS)" \
     DEBUG="-DNDEBUG" \
     DLL="" \
-	CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DK95G /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /D__32BIT__ /W2 /I." \
+	CFLAGS=" $(COMMON_CFLAGS) /J /DKUI /DK95G /DCK_WIN /DWIN32 /D_WIN32_WINNT=$(WIN32_VERSION) /D_CONSOLE /W2 /I." \
     LDFLAGS="" \
     PLATFORM="NT" \
     NOLINK="-c" \
@@ -659,7 +660,7 @@ wcos2d:
 	    DEF=""  # ckoker32.def
 
 # Flags are:
-#   --aa            Allows non-const initializers for local aggregates or unions.
+#   -aa             Allows non-const initializers for local aggregates or unions.
 #                   Required to fix initialisation of viocell with geterasecolor()
 #                   in a few places.
 #   -Fh=<file>      Use precompiled headers where available. Equivalent to -Si+
@@ -696,10 +697,8 @@ ibmc:
         NOLINK="-c" \
 !ifdef WARP
         WARP="YES" \
-        LINKFLAGS="/nologo /noi /align:16 /base:0x10000" \
-!else
-        LINKFLAGS="/nologo /noi /align:16 /base:0x10000" \
 !endif
+        LINKFLAGS="/nologo /noi /align:16 /base:0x10000" \
 	DEF="ckoker32.def"
 
 # source browser
@@ -789,56 +788,63 @@ DEFINES = -DOS2 -DDYNAMIC -DKANJI -DTCPSOCKET \
 !ifndef K95BUILD
 K95BUILD = K95
 !endif
+DEFINES = -DNT -DWINVER=0x0400 -DOS2 -D__32BIT__ -DDYNAMIC -DUSE_STRERROR
 !if "$(K95BUILD)" == "TLSONLY"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
-          -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
+DEFINES = $(DEFINES) -DNOSSH \
+          -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE \
           -DNETFILE -DONETERMUPD -DNO_ENCRYPTION -DZLIB \
           -DNO_SRP -DNO_KERBEROS -DBETATEST -DNOCKXYZ
 !else if "$(K95BUILD)" == "UIUC"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
-          -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
+DEFINES = $(DEFINES) -DNOSSH \
+          -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE \
           -DNETFILE -DONETERMUPD -DZLIB \
           -DNOXFER -DNODIAL -DNOHTTP -DNOFORWARDX -DNOBROWSER -DNOLOGIN \
           -DNOCYRIL -DNOKANJI -DNOHEBREW -DNOGREEK -DNOLOGIN -DNOIKSD -DNOHELP \
           -DNOSOCKS -DNONETCMD -DNO_SRP -DNO_SSL -DNOFTP -DBETATEST \
           -DNODEBUG -DCK_TAPI -DNOPUSH -DNO_COMPORT -DNOXMIT -DNOSCRIPT -DNO_KERBEROS -DNOCKXYZ
 !else if "$(K95BUILD)" == "IKSD"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH -DONETERMUPD -DUSE_STRERROR \
-          -DDYNAMIC -DKANJI -DNETCONN -DIKSDONLY -DZLIB \
+DEFINES = $(DEFINES) -DNOSSH -DONETERMUPD \
+          -DKANJI -DNETCONN -DIKSDONLY -DZLIB \
           -DHADDRLIST -DCK_LOGIN \
           -DNO_SRP -DNO_KERBEROS -DNOCKXYZ
 		  #-DBETATEST # -DPRE_SRP_1_7_3
 !else
-DEFINES = -DNT -DWINVER=0x0400 -DOS2 -D_CRT_SECURE_NO_DEPRECATE -DUSE_STRERROR\
-          -DDYNAMIC -DKANJI \
+DEFINES = $(DEFINES) -D_CRT_SECURE_NO_DEPRECATE \
+          -DKANJI \
           -DHADDRLIST -DNPIPE -DOS2MOUSE -DTCPSOCKET -DRLOGCODE \
           -DNETFILE -DONETERMUPD  \
           -DNEWFTP -DBETATEST -DNO_DNS_SRV \
           $(ENABLED_FEATURE_DEFS) $(DISABLED_FEATURE_DEFS)
-!if "$(CMP)" != "OWCL"
-DEFINES = $(DEFINES) -D__STDC__
 !endif
+!if ("$(CMP)" != "OWCL") && ("$(CMP)" != "OWWCL")
+DEFINES = $(DEFINES) -D__STDC__
 !endif
 !endif
 !else
 ! ERROR Macro named PLATFORM undefined
 !endif
 
-!if "$(CMP)" == "OWCL"
+!if ( "$(CMP)" == "OWCL" ) || ( "$(CMP)" == "OWWCL" )
 # Watcom was the full path to commode.obj - its not enough for it to
 # be on the library path.
-COMMODE_OBJ = $(WATCOM)\lib386\nt\commode.obj
+CC_COMMODE_OBJ = /link /passwopts:"libfile commode.obj"
+LINK_COMMODE_OBJ = /passwopts:"libfile commode.obj"
+#COMMODE_OBJ = $(WATCOM)\lib386\nt\commode.obj
+!else if "$(CMP)" == "OWWCL"
+CC_COMMODE_OBJ = -"libfile commode.obj"
+LINK_COMMODE_OBJ = -"libfile commode.obj"
 !else
-COMMODE_OBJ = commode.obj
+CC_COMMODE_OBJ = commode.obj"
+LINK_COMMODE_OBJ = commode.obj
 !endif
 
 !ifdef PLATFORM
 !if "$(PLATFORM)" == "OS2"
-LIBS = os2386.lib rexx.lib
+LIBS = rexx.lib
 
 # Open Watcom doesn't have bigmath.lib
 #  -> this likely comes from the SRP distribution (srp\srp-1.4\cryptolib_1.1\VISUALC\BIGMATH)
-!if "$(CMP)" != "OWCL"
+!if ("$(CMP)" != "OWCL") && ("$(CMP)" != "OWWCL")
 LIBS = $(LIBS) bigmath.lib
 !endif
 
@@ -847,9 +853,14 @@ LIBS = $(LIBS) libsrp.lib
 !endif
 
 !else if "$(PLATFORM)" == "NT"
+
 !if "$(K95BUILD)" == "UIUC"
+!if ("$(CMP)" == "OWCL") || ("$(CMP)" == "OWWCL")
+LIBS = wsock32.lib winmm.lib
+!else
 LIBS = kernel32.lib user32.lib gdi32.lib wsock32.lib \
        winmm.lib mpr.lib advapi32.lib winspool.lib
+!endif
 
 # wshelper (via wshload) is required for DNS-SRV support
 !if "$(CKF_K4W_WSHELPER)" == "yes"
@@ -857,10 +868,13 @@ LIBS = $(LIBS) wshload.lib
 !endif
 
 !else
-KUILIBS = kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
-        advapi32.lib shell32.lib rpcrt4.lib rpcns4.lib wsock32.lib \
-        winmm.lib comctl32.lib mpr.lib $(COMMODE_OBJ)
+
+KUILIBS = wsock32.lib winmm.lib
+!if ("$(CMP)" != "OWCL") && ("$(CMP)" != "OWWCL")
+KUILIBS = $(KUILIBS) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
+        advapi32.lib shell32.lib rpcrt4.lib rpcns4.lib comctl32.lib mpr.lib
 # vdmdbg.lib
+!endif
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 KUILIBS = $(KUILIBS) $(SSH_LIB) ws2_32.lib
 !endif
@@ -899,8 +913,11 @@ KUILIBS = $(KUILIBS) libcmt.lib
 
 # Commented out KUILIBS in K95 2.1.3: msvcrt.lib libsrp.lib bigmath.lib
 
-LIBS = kernel32.lib user32.lib gdi32.lib wsock32.lib shell32.lib\
-       winmm.lib mpr.lib advapi32.lib winspool.lib $(COMMODE_OBJ)
+LIBS = wsock32.lib winmm.lib
+!if ("$(CMP)" != "OWCL") && ("$(CMP)" != "OWWCL")
+LIBS = $(LIBS) kernel32.lib user32.lib gdi32.lib shell32.lib\
+       mpr.lib advapi32.lib winspool.lib
+!endif
 
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 LIBS = $(LIBS) $(SSH_LIB) ws2_32.lib
@@ -1085,99 +1102,99 @@ tcp32: cko32i20.dll
 cknker.exe: $(OBJS) cknker.res $(DEF) ckoker.mak 
 #        $(CC) $(CC2) /link "$(LINKFLAGS)" $(DEBUG) $(OBJS) $(DEF) $(OUT) $@ $(LIBS) $(LDFLAGS)
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ $(OBJS) cknker.res $(LIBS) 
+       $(LINKFLAGS) /OUT:$@ $(OBJS) cknker.res $(LINK_COMMODE_OBJ) $(LIBS) 
 <<
 
 iksdnt.exe: $(OBJS) cknker.res $(DEF) ckoker.mak 
 #        $(CC) $(CC2) /link "$(LINKFLAGS)" $(DEBUG) $(OBJS) $(DEF) $(OUT) $@ $(LIBS) $(LDFLAGS)
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ $(OBJS) cknker.res $(LIBS) 
+       $(LINKFLAGS) /OUT:$@ $(OBJS) cknker.res $(LINK_COMMODE_OBJ) $(LIBS) 
 <<
 
 mdnker.exe: $(OBJS) ckcmdb$(O) cknker.res $(DEF) ckoker.mak 
 #        $(CC) $(CC2) /link "$(LINKFLAGS)" $(DEBUG) ckcmdb$(O) $(OBJS) $(DEF) $(OUT) $@ $(LIBS) $(LDFLAGS)
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ ckcmdb$(O) $(OBJS) cknker.res $(LIBS) 
+       $(LINKFLAGS) /OUT:$@ ckcmdb$(O) $(OBJS) cknker.res $(LINK_COMMODE_OBJ) $(LIBS) 
 <<
 
 k95g.exe: $(OBJS) $(KUIOBJS) cknker.res $(DEF) ckoker.mak 
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ $(OBJS) $(KUIOBJS) $(OUTDIR)\kui.res $(KUILIBS) 
+       $(LINKFLAGS) /OUT:$@ $(OBJS) $(KUIOBJS) $(OUTDIR)\kui.res $(LINK_COMMODE_OBJ) $(KUILIBS) 
 <<
 
 cknkui.exe: $(OBJS) $(KUIOBJS) cknker.res $(DEF) ckoker.mak 
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ $(OBJS) $(KUIOBJS) $(OUTDIR)\kui.res $(KUILIBS) 
+       $(LINKFLAGS) /OUT:$@ $(OBJS) $(KUIOBJS) $(OUTDIR)\kui.res $(LINK_COMMODE_OBJ) $(KUILIBS) 
 <<
 
 setup.exe: setup.obj settapi.obj $(DEF) ckoker.mak 
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ setup.obj settapi.obj cknker.res $(LIBS) 
+       $(LINKFLAGS) /OUT:$@ setup.obj settapi.obj cknker.res $(LINK_COMMODE_OBJ) $(LIBS) 
 <<
 
 test.exe: test.obj $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ test.obj cknker.res $(LIBS) 
+       $(LINKFLAGS) /OUT:$@ test.obj cknker.res $(LINK_COMMODE_OBJ) $(LIBS) 
 <<
 
 telnet.exe: telnet.obj telnet.res $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ telnet.obj telnet.res $(LIBS)
+       $(LINKFLAGS) /OUT:$@ telnet.obj telnet.res $(LINK_COMMODE_OBJ) $(LIBS)
 <<
 
 rlogin.exe: rlogin.obj rlogin.res $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ rlogin.obj rlogin.res $(LIBS)
+       $(LINKFLAGS) /OUT:$@ rlogin.obj rlogin.res $(LINK_COMMODE_OBJ) $(LIBS)
 <<
 
 se.exe: se.obj se.res $(DEF) ckoker.mak
        link.exe @<<
-       $(LINKFLAGS) /OUT:$@ se.obj se.res $(LIBS)
+       $(LINKFLAGS) /OUT:$@ se.obj se.res $(LINK_COMMODE_OBJ) $(LIBS)
 <<
 
 k2dc.exe: k2dc.obj $(DEF) ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(LINKFLAGS) k2dc.obj $(OUT)$@ $(LDFLAGS) $(LIBS)
+        $(CC) $(CC2) $(LINKFLAGS) k2dc.obj $(OUT)$@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !else
-      	$(CC) $(CC2) /B"$(LINKFLAGS)" k2dc.obj $(OUT) $@ $(LDFLAGS) $(LIBS)
+      	$(CC) $(CC2) /B"$(LINKFLAGS)" k2dc.obj $(OUT) $@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !endif
 
 orlogin.exe: rlogin.obj $(DEF) ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(LINKFLAGS) rlogin.obj $(OUT)$@ $(LDFLAGS) $(LIBS)
+        $(CC) $(CC2) $(LINKFLAGS) rlogin.obj $(OUT)$@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !else
-      	$(CC) $(CC2) /B"$(LINKFLAGS)" rlogin.obj $(OUT) $@ $(LDFLAGS) $(LIBS)
+      	$(CC) $(CC2) /B"$(LINKFLAGS)" rlogin.obj $(OUT) $@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !endif
 
 otextps.exe: textps.obj $(DEF) ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(LINKFLAGS) textps.obj $(OUT)$@ $(LDFLAGS) $(LIBS)
+        $(CC) $(CC2) $(LINKFLAGS) textps.obj $(OUT)$@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !else
-      	$(CC) $(CC2) /B"$(LINKFLAGS)" textps.obj $(OUT) $@ $(LDFLAGS) $(LIBS)
+      	$(CC) $(CC2) /B"$(LINKFLAGS)" textps.obj $(OUT) $@ $(LDFLAGS) $(CC_COMMODE_OBJ) $(LIBS)
 !endif
 
 k95d.exe: k95d.obj k95d.res $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ k95d.obj k95d.res $(LIBS)
+       $(LINKFLAGS) /OUT:$@ k95d.obj k95d.res $(LINK_COMMODE_OBJ) $(LIBS)
 <<
 
 ctl3dins.exe: ctl3dins.obj ctl3dins.res $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ ctl3dins.obj ctl3dins.res $(LIBS) VERSION.LIB
+       $(LINKFLAGS) /OUT:$@ ctl3dins.obj ctl3dins.res $(LINK_COMMODE_OBJ) $(LIBS) VERSION.LIB
 <<
 
 textps.exe: textps.obj textps.res $(DEF) ckoker.mak
        link.exe @<< 
-       $(LINKFLAGS) /OUT:$@ textps.obj textps.res $(LIBS)
+       $(LINKFLAGS) /OUT:$@ textps.obj textps.res $(LINK_COMMODE_OBJ) $(LIBS)
 <<
 
 #       ckoker.msb  -- no idea what this is
 ckoker32.exe: $(OBJS) $(DEF) ckoker.res ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(LINKFLAGS) $(DEBUG) $(OBJS) $(DEF) $(OUT)$@ $(LIBS) $(LDFLAGS)
+        $(CC) $(CC2) $(LINKFLAGS) $(DEBUG) $(OBJS) $(DEF) $(OUT)$@ $(CC_COMMODE_OBJ) $(LIBS) $(LDFLAGS)
         wrc -q -bt=os2 ckoker.res $@
 !else
-        $(CC) $(CC2) /B"$(LINKFLAGS)" $(DEBUG) $(OBJS) $(DEF) $(OUT) $@ $(LIBS) $(LDFLAGS)
+        $(CC) $(CC2) /B"$(LINKFLAGS)" $(DEBUG) $(OBJS) $(DEF) $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS) $(LDFLAGS)
 !ifdef WARP
        rc -p -x2 ckoker.res $@
 !else
@@ -1198,31 +1215,31 @@ cko32rtl.lib: cko32rtl.dll cko32rt.def cko32rt.c
 cko32i20.dll: ckoi20.obj ckoker.mak
 !if "$(CMP)" == "OWWCL"
          $(CC) $(CC2) $(DEBUG) $(DLL) ckoi20.obj $(OUT)$@ \
-	 $(LINKFLAGS_DLL) tcpip32.lib $(LIBS)
+	 $(LINKFLAGS_DLL) $(CC_COMMODE_OBJ) tcpip32.lib $(LIBS)
 !else
 	$(CC) $(CC2) $(DEBUG) $(DLL) ckoi20.obj cko32i20.def $(OUT) $@ \
-	/B"/noe /noi" $(IBM20LIBS) $(LIBS)
+	/B"/noe /noi" $(CC_COMMODE_OBJ) $(IBM20LIBS) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !endif
 
 cko32i12.dll: ckoi12.obj cko32i12.def ckoker.mak
 	$(CC) $(CC2) $(DEBUG) $(DLL) ckoi12.obj cko32i12.def $(OUT) $@ \
-	/B"/noe /noi" $(IBM12LIBS) $(LIBS)
+	/B"/noe /noi" $(CC_COMMODE_OBJ) $(IBM12LIBS) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL       
 
 cko32f13.dll: ckof13.obj cko32f13.def ckoker.mak
 	$(CC) $(CC2) $(DEBUG) $(DLL) ckof13.obj cko32f13.def $(OUT) $@ \
-	/B"/noe /noi" $(FTP13LIBS32) $(LIBS)
+	/B"/noe /noi" $(CC_COMMODE_OBJ) $(FTP13LIBS32) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL       
 
 cko32n30.dll: ckon30.obj cko32n30.def ckoker.mak
 	$(CC) $(CC2) $(DEBUG) $(DLL) ckon30.obj cko32n30.def $(OUT) $@ \
-	/B"/noe /noi" $(LWP30LIBS32) $(LIBS)
+	/B"/noe /noi" $(CC_COMMODE_OBJ) $(LWP30LIBS32) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL       
 
 pcfonts.dll: ckopcf.obj cko32pcf.def ckopcf.res ckoker.mak
 	$(CC) $(CC2) $(DEBUG) $(DLL) ckopcf.obj \
-        cko32pcf.def $(OUT) $@ $(LIBS)
+        cko32pcf.def $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS)
 !ifdef WARP
         rc -p -x2 ckopcf.res pcfonts.dll
 !else
@@ -1256,26 +1273,26 @@ docs:   ckermit.inf
 # ckotel.def
 otelnet.exe: ckotel.obj ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(DEBUG) ckotel.obj $(LINKFLAGS) $(OUT)$@ $(LIBS)
+        $(CC) $(CC2) $(DEBUG) ckotel.obj $(LINKFLAGS) $(OUT)$@ $(CC_COMMODE_OBJ) $(LIBS)
 !else
-        $(CC) $(CC2) $(DEBUG) ckotel.obj ckotel.def $(OUT) $@ $(LIBS)
+        $(CC) $(CC2) $(DEBUG) ckotel.obj ckotel.def $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !endif
 
 osetup.exe: setup.obj osetup.def ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(DEBUG) setup.obj $(LINKFLAGS) $(OUT)$@
+        $(CC) $(DEBUG) setup.obj $(LINKFLAGS) $(OUT)$@ $(CC_COMMODE_OBJ)
 !else
-        $(CC) $(DEBUG) setup.obj osetup.def $(OUT) $@
+        $(CC) $(DEBUG) setup.obj osetup.def $(OUT) $@ $(CC_COMMODE_OBJ)
 !endif
 
 # ckoclip.def
 ckoclip.exe: ckoclip.obj ckoker.mak ckoclip.res
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(CC2) $(LINKFLAGS_WIN) $(DEBUG) ckoclip.obj $(OUT)$@ $(LIBS)
+        $(CC) $(CC2) $(LINKFLAGS_WIN) $(DEBUG) ckoclip.obj $(OUT)$@ $(CC_COMMODE_OBJ) $(LIBS)
         wrc -q -bt=os2 ckoclip.res $@
 !else
-        $(CC) $(CC2) $(DEBUG) ckoclip.obj ckoclip.def $(OUT) $@ $(LIBS)
+        $(CC) $(CC2) $(DEBUG) ckoclip.obj ckoclip.def $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS)
 !ifdef WARP
        rc -p -x2 ckoclip.res $@
 !else
@@ -1288,31 +1305,31 @@ ckoclip.exe: ckoclip.obj ckoker.mak ckoclip.res
 !if "$(CKF_SRP)" == "yes"
 srp-tconf.exe: srp-tconf.obj getopt.obj ckosslc.obj ckoker.mak
 !if "$(PLATFORM)" == "OS2"
-        $(CC) $(CC2) $(DEBUG) srp-tconf.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(LIBS)
+        $(CC) $(CC2) $(DEBUG) srp-tconf.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ srp-tconf.obj getopt.obj ckosslc.obj $(LIBS)
+	link /debug /out:$@ srp-tconf.obj getopt.obj ckosslc.obj $(LINK_COMMODE_OBJ) $(LIBS)
 !endif
 
 srp-passwd.exe: srp-passwd.obj getopt.obj ckosslc.obj ckoker.mak
 !if "$(PLATFORM)" == "OS2"
-        $(CC) $(CC2) $(DEBUG) srp-passwd.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(LIBS)
+        $(CC) $(CC2) $(DEBUG) srp-passwd.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(CC_COMMODE_OBJ) $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ srp-passwd.obj getopt.obj ckosslc.obj $(LIBS)
+	link /debug /out:$@ srp-passwd.obj getopt.obj ckosslc.obj $(LINK_COMMODE_OBJ) $(LIBS)
 !endif
 !endif
         
 iksdsvc.exe: iksdsvc.obj iksdsvc.res ckoker.mak
 !if "$(PLATFORM)" == "OS2"
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ iksdsvc.obj iksdsvc.res $(LIBS)
+	link /debug /out:$@ iksdsvc.obj iksdsvc.res $(LINK_COMMODE_OBJ) $(LIBS)
 !endif
         
 iksd.exe: iksd.obj iksd.res ckoker.mak
 !if "$(PLATFORM)" == "OS2"
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ iksd.obj iksd.res $(LIBS)
+	link /debug /out:$@ iksd.obj iksd.res $(LINK_COMMODE_OBJ) $(LIBS)
 !endif
         
 
@@ -1593,7 +1610,7 @@ ckon30.obj: ckonov.c ckotcp.h
 
 ckoker.res: ckoker.rc
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoker.rc
+        wrc -q -r -bt=os2 ckoker.rc
 !else
         rc -r ckoker.rc
 !endif
@@ -1636,7 +1653,7 @@ ckopcf.res: ckopcf.rc ckopcf.h
 
 ckoclip.res: ckoclip.rc ckoclip.h ckoclip.ico
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoclip.rc
+        wrc -q -r -bt=os2 ckoclip.rc
 !else
         rc -r ckoclip.rc
 !endif

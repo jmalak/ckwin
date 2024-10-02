@@ -30,28 +30,27 @@ WNT_CPP=cl
 WNT_LINK=link
 WNT_LIBRARIAN=lib
 
-WNT_CPP_OPTS= -c -MT -W3 -DWIN32 -DOS2 -DNT -I.\.. -J -noBool
-
-!if "$(CMP)" == "OWCL"
-# The Open Watcom 1.9 linker fails with an internal error using the normal linker options.
-WNT_LINK_OPTS=-subsystem:windows /MAP
-!else
-WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP
+WNT_CPP_OPTS= -c -MT -W3 -DWIN32 -DOS2 -DNT -I.\.. -J
+!if "$(CMP)" != "OWCL"
+WNT_CPP_OPTS=$(WNT_CPP_OPTS) -noBool
 !endif
 
 #WNT_CPP_OPTS= -c -MT -W3 -D_X86_=1 -DWIN32 -DOS2 -DNT -I.\.. /Zi -J -noBool
 #WNT_LINK_OPTS=-align:0x1000 -subsystem:windows -entry:WinMainCRTStartup /MAP /Debug:full /Debugtype:cv 
+WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP
 WNT_CON_LINK_OPTS=-subsystem:console -entry:mainCRTStartup
 WNT_LIB_OPTS=/machine:i386 /subsystem:WINDOWS
 
 WNT_OBJS=
-WNT_LIBS=libcmt.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib wnt_zil.lib ndirect.lib nservice.lib nstorage.lib oldnames.lib shell32.lib ole32.lib uuid.lib advapi32.lib # compmgr.lib
-
+WNT_LIBS=wnt_zil.lib ndirect.lib nservice.lib nstorage.lib
+!if "$(CMP)" != "OWCL"
+WNT_LIBS=$(WNT_LIBS) libcmt.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib oldnames.lib shell32.lib ole32.lib uuid.lib advapi32.lib # compmgr.lib
 !if $(MSC_VER) < 130
 !message Using ctl3d32
 # CTL3D32 is only available on Visual C++ 6.0 and earlier. Visual C++ 2002 and
 # Open Watcom (which we pretend is VC++ 2002) do not have it.
 WNT_LIBS=$(WNT_LIBS) ctl3d32.lib
+!endif
 !endif
 
 .cpp.obn:

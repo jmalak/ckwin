@@ -31,34 +31,40 @@ WNT_CPP=cl
 WNT_LINK=link
 WNT_LIBRARIAN=lib
 
-WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -DCKODIALER -I..\k95 -noBool
+#WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -I..\k95 /Zi -noBool
+#WNT_LINK_OPTS=-align:0x1000 -subsystem:windows -entry:WinMainCRTStartup /MAP /NODEFAULTLIB:libc /Debug:full /Debugtype:cv 
+WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -DCKODIALER -I..\k95
+!if "$(CMP)" != "OWCL"
+WNT_CPP_OPTS=$(WNT_CPP_OPTS) -noBool
 !if $(MSC_VER) < 100
 # Visual C++ 2.0 or older
 WNT_CPP_OPTS=$(WNT_CPP_OPTS) -DNODIAL -DCKT_NT31
 !endif
-
-!if "$(CMP)" == "OWCL"
-# The Open Watcom 1.9 linker fails with an internal error using the normal linker options.
-WNT_LINK_OPTS=-subsystem:windows /MAP
-!else
-WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP /NODEFAULTLIB:libc
 !endif
-#WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -I..\k95 /Zi -noBool
-#WNT_LINK_OPTS=-align:0x1000 -subsystem:windows -entry:WinMainCRTStartup /MAP /NODEFAULTLIB:libc /Debug:full /Debugtype:cv 
+
 WNT_CON_LINK_OPTS=-subsystem:console -entry:mainCRTStartup
+WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP
+!if "$(CMP)" != "OWCL"
+WNT_LINK_OPTS=$(WNT_LINK_OPTS) /NODEFAULTLIB:libc
+!endif
 WNT_LIB_OPTS=/machine:i386 /subsystem:WINDOWS
 
 WNT_OBJS=
-WNT_LIBS=libcmt.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib wnt_zil.lib ndirect.lib nservice.lib nstorage.lib oldnames.lib shell32.lib ole32.lib uuid.lib advapi32.lib # compmgr.lib
-
+WNT_LIBS=wnt_zil.lib ndirect.lib nservice.lib nstorage.lib
+!if "$(CMP)" != "OWCL"
+WNT_LIBS=$(WNT_LIBS) libcmt.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib oldnames.lib shell32.lib ole32.lib uuid.lib advapi32.lib # compmgr.lib
 !if $(MSC_VER) < 130
 !message Using ctl3d32
 # CTL3D32 is only available on Visual C++ 6.0 and earlier. Visual C++ 2002 and
 # Open Watcom (which we pretend is VC++ 2002) do not have it.
 WNT_LIBS=$(WNT_LIBS) ctl3d32.lib
 !endif
+!endif
 
-WNT_CON_LIBS=libc.lib kernel32.lib w32_zil.lib ndirect.lib nservice.lib nstorage.lib oldnames.lib
+WNT_CON_LIBS=w32_zil.lib ndirect.lib nservice.lib nstorage.lib
+!if "$(CMP)" != "OWCL"
+WNT_CON_LIBS=libc.lib kernel32.lib oldnames.lib
+!endif
 .cpp.obn:
 	$(WNT_CPP) $(WNT_CPP_OPTS) -Fo$*.obn $<
 
@@ -85,6 +91,10 @@ OS2_RC=rc
 #OS2_CPP_OPTS=/c /D__OS2__ /DOS2 /Gx+ /Sp1 /FiZIL.SYM /SiZIL.SYM
 #OS2_LINK_OPTS=/BASE:0x10000 /PM:PM /NOI /NOE 
 # ----- Next line for pre-compiled headers and optimization -----------------
+OS2_LIBS=os2_zil.lib odirect.lib oservice.lib ostorage.lib
+OS2_LIB_OPTS=
+OS2_RC_OPTS=
+OS2_OBJS=
 !if "$(CMP)" == "OWWCL"
 # ICC   WCC386
 # /Gx+  -xs         Enable generation of C++ Exception Handling Code (watcom: -xs = balanced exception handling)
@@ -114,19 +124,11 @@ OS2_RC=rc
 #
 # -c -xs
 OS2_CPP_OPTS=-DOS2 -DCKODIALER -zp=1 -bm -Fh -bt=os2
-OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000
-OS2_LIB_OPTS=
-OS2_RC_OPTS=
-OS2_OBJS=
-OS2_LIBS=os2_zil.lib,odirect.lib,oservice.lib,ostorage.lib
+OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000 libpath '$(%CK_ZINC_LIB)'
+OS2_LIBS=L {$(OS2_LIBS)}
 !else
 OS2_CPP_OPTS=/c /D__OS2__ /DOS2 /DCKODIALER /Gx+ /Sp1 -Sm -G5 -Gt -Gd- -Gn+ -J -Fi+ -Si+ -Gi+ -Gl+ -O -Oi25 -Gm
 OS2_LINK_OPTS=/BASE:0x10000 /PM:PM /NOI /NOE
-OS2_LINK_OUT=
-OS2_LIB_OPTS=
-OS2_RC_OPTS=
-OS2_OBJS=
-OS2_LIBS=os2_zil.lib odirect.lib oservice.lib ostorage.lib
 !endif
 
 .SUFFIXES : .cpp .c
@@ -295,9 +297,9 @@ k2dial.exe: main.obo dialer.obo lstitm.obo kconnect.obo \
     ksetterminal.obo,ksetxfer.obo,ksetserial.obo,ksettelnet.obo,ksetkerberos.obo,\
     ksettls.obo,ksetkeyboard.obo,ksetlogin.obo,ksetprinter.obo,ksetlogs.obo,\
     ksetssh.obo,ksetgui.obo,ksetftp.obo,ksetdlg.obo,kabout.obo,ksettcp.obo \
-    L $(OS2_LIBS)
+    $(OS2_LIBS)
     # k2dial.rc is empty so no need to do anything with the resource compiler.
-    #rc k2dial.rc k2dial.exe
+    wrc -q -bt=os2 k2dial.rc k2dial.exe
 !else
 	$(OS2_LINK) $(OS2_LINK_OPTS) -out:k2dial.exe \
     main.obo dialer.obo lstitm.obo kconnect.obo kdialopt.obo kquick.obo kdconfig.obo\

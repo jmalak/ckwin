@@ -27,11 +27,11 @@
 # ----- Windows NT compiler options -----------------------------------------
 # for debug:    add /Zi to CPP_OPTS
 #               add /DEBUG:MAPPED,FULL /DEBUGTYPE:CV to LINK_OPTS
-WNT_CPP=cl
-WNT_LINK=link
-WNT_LIBRARIAN=lib
+WNT_CPP=cl /nologo
+WNT_LINK=link /nologo
+WNT_LIBRARIAN=lib /nologo
 
-WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -DCKODIALER -I..\k95 -noBool
+WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DNT -DCKODIALER -I..\k95 -noBool
 !if $(MSC_VER) < 100
 # Visual C++ 2.0 or older
 WNT_CPP_OPTS=$(WNT_CPP_OPTS) -DNODIAL -DCKT_NT31
@@ -43,7 +43,7 @@ WNT_LINK_OPTS=-subsystem:windows /MAP
 !else
 WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP /NODEFAULTLIB:libc
 !endif
-#WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DOS2 -DNT -I..\k95 /Zi -noBool
+#WNT_CPP_OPTS= -c -W3 -MT -DWIN32 -DNT -I..\k95 /Zi -noBool
 #WNT_LINK_OPTS=-align:0x1000 -subsystem:windows -entry:WinMainCRTStartup /MAP /NODEFAULTLIB:libc /Debug:full /Debugtype:cv 
 WNT_CON_LINK_OPTS=-subsystem:console -entry:mainCRTStartup
 WNT_LIB_OPTS=/machine:i386 /subsystem:WINDOWS
@@ -67,10 +67,10 @@ WNT_CON_LIBS=libc.lib kernel32.lib w32_zil.lib ndirect.lib nservice.lib nstorage
 
 # ----- OS/2 compiler options -----------------------------------------------
 !if "$(CMP)" == "OWWCL"
-OS2_CPP=wpp386
-OS2_LINK=wlink
-OS2_LIBRARIAN=wlib
-OS2_RC=wrc
+OS2_CPP=wpp386 -zq
+OS2_LINK=wlink op quiet
+OS2_LIBRARIAN=wlib -zq
+OS2_RC=wrc -zq
 !else
 OS2_CPP=icc
 OS2_LINK=ilink

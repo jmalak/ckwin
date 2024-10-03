@@ -6294,17 +6294,11 @@ netinc(timo) int timo;
 #ifdef NT
                 WSASafeToCancel = 1;
 #endif /* NT */
-                rc = select(FD_SETSIZE,
-#ifdef __DECC
-#ifdef INTSELECT
-                            (int *)
-#else /* def INTSELECT */
-                            (fd_set *)
-#endif /* def INTSELECT [else] */
-#else /* def __DECC */
-                            (fd_set *)
-#endif /* def __DECC [else] */
-                            &rfds, NULL, NULL, &tv);
+#if defined( INTSELECT )
+                rc = select(FD_SETSIZE, (int *)&rfds, NULL, NULL, &tv);
+#else
+                rc = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
+#endif
                 if (rc < 0) {
                     int s_errno = socket_errno;
                     debug(F111,"netinc","select",rc);
@@ -6328,7 +6322,7 @@ netinc(timo) int timo;
                  * ttchk() > 0 telnet suddenly works!
                  *
                  * So maybe there is some bug in the NT 3.1 Winsock
-                 * implementation? Or is K95 doing something that NT 3.1 doesn't
+                 * implementation? Or is CKW doing something that NT 3.1 doesn't
                  * like?
                  *
                  * problem is, the API ttchk() relies on (FIONREAD) is slow and
@@ -11493,11 +11487,7 @@ http_inc(timo) int timo;
 #ifdef NT
             WSASafeToCancel = 1;
 #endif /* NT */
-            rc = select(FD_SETSIZE,
-#ifndef __DECC
-                         (fd_set *)
-#endif /* __DECC */
-                         &rfds, NULL, NULL, &tv);
+            rc = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
             if (rc < 0) {
                 int s_errno = socket_errno;
                 debug(F111,"http_inc","select",rc);

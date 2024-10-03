@@ -618,7 +618,7 @@ wcos2:
         CC2="-Fh -br" \
 !endif
         OUT="-Fe=" O=".obj" \
-	    OPT=" " \
+        OPT=" " \
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
 	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
@@ -643,7 +643,7 @@ wcos2d:
         CC2="-Fh -d3 -br" \
 !endif
         OUT="-Fe=" O=".obj" \
-	    OPT=" " \
+        OPT=" " \
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
 	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
@@ -705,21 +705,10 @@ ibmc:
 # source browser
 ibmsb:
 	$(MAKE) -f ckoker.mak os232 \
-	CC="sb" \
-        CC2="" \
-        OUT="-Fo" O="._sb" \
-	OPT="" \
-        DEBUG="" \
-        DLL="" \
-	CFLAGS="" \
-        LDFLAGS="" \
         PLATFORM="OS2" \
-        NOLINK="" \
 !ifdef WARP
-        WARP="YES" \
+        WARP="YES"
 !endif
-        LINKFLAGS="" \
-	DEF=""
 
 # profiling version
 ibmcp:
@@ -790,12 +779,12 @@ DEFINES = -DOS2 -DDYNAMIC -DKANJI -DTCPSOCKET \
 K95BUILD = K95
 !endif
 !if "$(K95BUILD)" == "TLSONLY"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
+DEFINES = -DNT -DWINVER=0x0400 -DNOSSH \
           -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
           -DNETFILE -DONETERMUPD -DNO_ENCRYPTION -DZLIB \
           -DNO_SRP -DNO_KERBEROS -DBETATEST -DNOCKXYZ
 !else if "$(K95BUILD)" == "UIUC"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
+DEFINES = -DNT -DWINVER=0x0400 -DNOSSH \
           -DDYNAMIC -DNETCONN -DHADDRLIST -DOS2MOUSE -DTCPSOCKET -DRLOGCODE -DUSE_STRERROR \
           -DNETFILE -DONETERMUPD -DZLIB \
           -DNOXFER -DNODIAL -DNOHTTP -DNOFORWARDX -DNOBROWSER -DNOLOGIN \
@@ -803,21 +792,21 @@ DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH \
           -DNOSOCKS -DNONETCMD -DNO_SRP -DNO_SSL -DNOFTP -DBETATEST \
           -DNODEBUG -DCK_TAPI -DNOPUSH -DNO_COMPORT -DNOXMIT -DNOSCRIPT -DNO_KERBEROS -DNOCKXYZ
 !else if "$(K95BUILD)" == "IKSD"
-DEFINES = -DNT -D__STDC__ -DWINVER=0x0400 -DOS2 -DNOSSH -DONETERMUPD -DUSE_STRERROR \
+DEFINES = -DNT -DWINVER=0x0400 -DNOSSH -DONETERMUPD -DUSE_STRERROR \
           -DDYNAMIC -DKANJI -DNETCONN -DIKSDONLY -DZLIB \
           -DHADDRLIST -DCK_LOGIN \
           -DNO_SRP -DNO_KERBEROS -DNOCKXYZ
 		  #-DBETATEST # -DPRE_SRP_1_7_3
 !else
-DEFINES = -DNT -DWINVER=0x0400 -DOS2 -D_CRT_SECURE_NO_DEPRECATE -DUSE_STRERROR\
+DEFINES = -DNT -DWINVER=0x0400 -D_CRT_SECURE_NO_DEPRECATE -DUSE_STRERROR\
           -DDYNAMIC -DKANJI \
           -DHADDRLIST -DNPIPE -DOS2MOUSE -DTCPSOCKET -DRLOGCODE \
           -DNETFILE -DONETERMUPD  \
           -DNEWFTP -DBETATEST -DNO_DNS_SRV \
           $(ENABLED_FEATURE_DEFS) $(DISABLED_FEATURE_DEFS)
+!endif
 !if "$(CMP)" != "OWCL"
 DEFINES = $(DEFINES) -D__STDC__
-!endif
 !endif
 !endif
 !else
@@ -834,12 +823,14 @@ COMMODE_OBJ = commode.obj
 
 !ifdef PLATFORM
 !if "$(PLATFORM)" == "OS2"
-LIBS = os2386.lib rexx.lib
+LIBS = rexx.lib
 
 # Open Watcom doesn't have bigmath.lib
 #  -> this likely comes from the SRP distribution (srp\srp-1.4\cryptolib_1.1\VISUALC\BIGMATH)
+!if "$(CMP)" != "OWWCL"
 !if "$(CMP)" != "OWCL"
 LIBS = $(LIBS) bigmath.lib
+!endif
 !endif
 
 !if "$(CKF_SRP)" == "yes"
@@ -857,9 +848,9 @@ LIBS = $(LIBS) wshload.lib
 !endif
 
 !else
-KUILIBS = kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
+KUILIBS = $(COMMODE_OBJ) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
         advapi32.lib shell32.lib rpcrt4.lib rpcns4.lib wsock32.lib \
-        winmm.lib comctl32.lib mpr.lib $(COMMODE_OBJ)
+        winmm.lib comctl32.lib mpr.lib
 # vdmdbg.lib
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 KUILIBS = $(KUILIBS) $(SSH_LIB) ws2_32.lib
@@ -900,7 +891,7 @@ KUILIBS = $(KUILIBS) libcmt.lib
 # Commented out KUILIBS in K95 2.1.3: msvcrt.lib libsrp.lib bigmath.lib
 
 LIBS = kernel32.lib user32.lib gdi32.lib wsock32.lib shell32.lib\
-       winmm.lib mpr.lib advapi32.lib winspool.lib $(COMMODE_OBJ)
+       winmm.lib mpr.lib advapi32.lib winspool.lib
 
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 LIBS = $(LIBS) $(SSH_LIB) ws2_32.lib
@@ -945,10 +936,18 @@ KUILIBS = $(KUILIBS) bufferoverflowu.lib
 
 #---------- Inference rules:
 
-.SUFFIXES: .w .c $(O)
+.SUFFIXES: .w .c ._sb .obj
 
-.c$(O):
+.c.obj:
 	$(CC) $(CC2) $(CFLAGS) $(DEBUG) $(OPT) $(DEFINES) $(NOLINK) $*.c
+
+.c._sb:
+	$(MAKE) -f ckoker.mak os232 \
+        PLATFORM="OS2" \
+!ifdef WARP
+        WARP="YES"
+!endif
+	sb $(DEFINES) -Fo._sb $*.c
 
 #---------- Targets:
 

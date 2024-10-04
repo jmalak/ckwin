@@ -118,8 +118,13 @@ OS2_RC=rc
 
 #
 # -c -xs
-OS2_CPP_OPTS=-DOS2 -DCKODIALER -zp=1 -bm -Fh -bt=os2
-OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000
+!if "$(CKB_STATIC_CRT_OS2)"=="yes"
+OS2_CPP_OPTS=-bm
+!else
+OS2_CPP_OPTS=-bm -fr
+!endif
+OS2_CPP_OPTS=$(OS2_CPP_OPTS) -D__OS2__ -DOS2 -DCKODIALER -zp=1 -Fh -bt=os2
+OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000, map
 OS2_LIB_OPTS=
 OS2_RC_OPTS=
 OS2_OBJS=

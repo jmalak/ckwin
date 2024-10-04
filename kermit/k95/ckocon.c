@@ -3411,11 +3411,11 @@ conect(int async) {
     if ( !async )
         isconnect(NULL);
     else
-        _beginthread(isconnect,
-#ifdef OS2ONLY
-                      0,
-#endif /* OS2ONLY */
-                      65536, NULL);
+#ifdef NT
+        _beginthread(isconnect, 65536, NULL);
+#else /* NT */
+        _beginthread(isconnect, 0, 65536, NULL);
+#endif /* NT */
 
     if (tt_timelimit && (now_t - start_t >= tt_timelimit))
         return(0);

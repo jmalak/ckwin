@@ -49,7 +49,7 @@ int
 cc_execute( jmp_buf * sj_buf, ck_sigfunc dofunc, ck_sigfunc failfunc )
 {
     int rc = 0 ;
-    TID tidThread ;
+    TID tid ;
     ULONG semid ;
     ULONG ccindex ;
    #ifdef NT
@@ -68,12 +68,11 @@ cc_execute( jmp_buf * sj_buf, ck_sigfunc dofunc, ck_sigfunc failfunc )
     CreateCtrlCMuxWait( ccindex, hevThread ) ;
 
     /* begin new thread with dofunc                    */
-    tidThread = (TID) _beginthread( dofunc,
-                                                                         #ifndef NT
-                                                                          0,
-                                                                         #endif /* NT */
-                                                                          THRDSTKSIZ, (void *) &hevThread ) ;
-
+   #ifndef NT
+    tid = (TID)_beginthread( dofunc, THRDSTKSIZ, (void *)&hevThread );
+   #else
+    tid = (TID)_beginthread( dofunc, 0, THRDSTKSIZ, (void *)&hevThread );
+   #endif
     /* wait for the event semaphore or Ctrl-C          */
     /*    semaphore to be set                          */
     /* when Ctrl-C semaphore is set execute failfunc   */
@@ -84,9 +83,9 @@ cc_execute( jmp_buf * sj_buf, ck_sigfunc dofunc, ck_sigfunc failfunc )
     {
         ResetCtrlCSem(ccindex) ;
        #ifdef NT
-        KillThread( tidThread ) ;
+        KillThread( tid ) ;
        #else /* NT */
-        DosKillThread( tidThread ) ;
+        DosKillThread( tid ) ;
        #endif /* NT */
         rc = -1 ;
         (*failfunc)(0) ;

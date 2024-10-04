@@ -403,7 +403,7 @@ int NetCmdGetChar( char * pch )
     return rc ;
 }
 
-void NetCmdReadThread( HANDLE pipe )
+void NetCmdReadThread( void *pipe )
 {
     int success = 1;
     CHAR c;
@@ -412,7 +412,7 @@ void NetCmdReadThread( HANDLE pipe )
     log("-->NetCmdReadThread()\n");
 
     while ( success ) {
-        if ( success = ReadFile(pipe, &c, 1, &io, NULL ) )
+        if ( success = ReadFile((HANDLE)pipe, &c, 1, &io, NULL ) )
         {
             NetCmdPutChar(c);
         }

@@ -145,6 +145,7 @@ ckThreadBegin( void (*func)(void *), ULONG stacksize, void * param, BOOL manage,
 #endif
 {
     int newthread, parentthread ;
+    TID tid ;
 #ifdef NT
     HANDLE hevThread ;
 #else /* NT */
@@ -177,11 +178,10 @@ ckThreadBegin( void (*func)(void *), ULONG stacksize, void * param, BOOL manage,
 
 
         if (param)
-            threads[newthread].CompletionSem =
 #ifdef NT
-                *((HANDLE *) param) ;
+            threads[newthread].CompletionSem = *((HANDLE *)param) ;
 #else
-                *((HEV *) param) ;
+            threads[newthread].CompletionSem = *((HEV *)param) ;
 #endif /* NT*/
 
       /* create an event semaphore for new thread        */
@@ -192,14 +192,12 @@ ckThreadBegin( void (*func)(void *), ULONG stacksize, void * param, BOOL manage,
 #endif /* NT */
         threads[newthread].DieSem = hevThread ;
 
-        threads[newthread].id = (TID) _beginthread( func,
-#ifndef NT
-                                                  0,
+#ifdef NT
+        tid = (TID)_beginthread(func, stacksize, (void *)&threads[newthread]);
+#else
+        tid = (TID)_beginthread(func, 0, stacksize, (void *)&threads[newthread]);
 #endif /* NT */
-                                                  stacksize,
-                                                  (void *)&threads[newthread]
-                                                  ) ;
-
+        threads[newthread].id = tid;
         threads[newthread].parent = parent ;
         parentthread = findthreadindex( parent ) ;
         insertchildintoparent( newthread, parentthread ) ;
@@ -207,23 +205,20 @@ ckThreadBegin( void (*func)(void *), ULONG stacksize, void * param, BOOL manage,
         debug(F101,"ckothr threads->inuse","",  threads[newthread].inuse) ;
         debug(F101,"ckothr threads->child","",  threads[newthread].child) ;
         debug(F101,"ckothr threads->sibling","",threads[newthread].sibling) ;
-        debug(F101,"ckothr ckThreadBegin TID","",threads[newthread].id) ;
+        debug(F101,"ckothr ckThreadBegin TID","",tid) ;
         ReleaseThreadMgmtMutex() ;
-        return threads[newthread].id;
    }
    else
    {
-       TID tid ;
-       tid = (TID) _beginthread( func,
-#ifndef NT
-                                0,
+#ifdef NT
+       tid = (TID)_beginthread(func, stacksize, param);
+#else
+       tid = (TID)_beginthread(func, 0, stacksize, param);
 #endif /* NT */
-                                stacksize,
-                                param ) ;
        debug(F101,"ckothr ckThreadBegin TID","",tid) ;
        ReleaseThreadMgmtMutex() ;
-       return tid;
    }
+   return tid;
 }
 
 BOOL

@@ -622,7 +622,7 @@ wcos2:
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
 	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
-        LDFLAGS="" \
+        LDFLAGS="-fm" \
         PLATFORM="OS2" \
         NOLINK="-c" \
 !ifdef WARP
@@ -647,7 +647,7 @@ wcos2d:
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
 	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
-        LDFLAGS="" \
+        LDFLAGS="-fm" \
         PLATFORM="OS2" \
         NOLINK="-c" \
 !ifdef WARP
@@ -659,7 +659,7 @@ wcos2d:
 	    DEF=""  # ckoker32.def
 
 # Flags are:
-#   --aa            Allows non-const initializers for local aggregates or unions.
+#   -aa             Allows non-const initializers for local aggregates or unions.
 #                   Required to fix initialisation of viocell with geterasecolor()
 #                   in a few places.
 #   -Fh=<file>      Use precompiled headers where available. Equivalent to -Si+

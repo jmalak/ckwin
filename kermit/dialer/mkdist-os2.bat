@@ -10,6 +10,7 @@ move k2dial.exe dist-os2
 copy dialer.dat dist-os2
 copy p_servic.znc dist-os2
 copy p_direct.znc dist-os2
+copy *.map dist-os2
 copy %root%\zinc\COPYING.LESSOR.txt dist-os2\COPYING.dialer.txt
 goto :end
 

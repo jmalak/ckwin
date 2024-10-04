@@ -216,6 +216,15 @@ EXTERN int ENTRY ck_gethostname(char *, int);
 
 #ifndef CK_DLL
 /* Ensure that IBM header files are not loaded */
+#ifdef __WATCOMC__
+#define _SYS_SOCKET_H_
+#define _UTILS_H_
+#define _TYPES_H_
+#define _NETINET_IN_H_
+#define _NETDB_H_
+#define _NET_IF_H_
+#define _NET_IF_ARP_H_
+#endif
 #define __SOCKET_32H
 #define __UTILS_32H
 #define __TYPES_32H
@@ -223,6 +232,7 @@ EXTERN int ENTRY ck_gethostname(char *, int);
 #define __NETDB_32H
 #define __IF_32H
 #define __IF_ARPA_32H
+
 #define _SYS_PARAM_H_
 #define _ARPA_INET_H_
 

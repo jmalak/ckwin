@@ -201,6 +201,33 @@ _PROTOTYP(void ssh_initialise,(VOID));
 #define INVALID_SOCKET -1
 #endif /* INVALID_SOCKET */
 
+typedef void CKSSHCALLBACK install_callback_func(const char*, const void*);
+typedef void CKSSHCALLBACK get_current_terminal_dimensions_func(int* rows, int* cols);
+typedef const char* CKSSHCALLBACK get_current_terminal_type_func();
+typedef const char* CKSSHCALLBACK ssh_get_uid_func();
+typedef const char* CKSSHCALLBACK ssh_get_pw_func();
+typedef int CKSSHCALLBACK ssh_get_nodelay_enabled_func();
+typedef SOCKET CKSSHCALLBACK ssh_open_socket_func(char* host, char* port);
+typedef int CKSSHCALLBACK dodebug_func(int,char *,char *,CK_OFF_T);
+typedef int CKSSHCALLBACK vscrnprintf_func(const char *, ...);
+typedef int CKSSHCALLBACK uq_txt_func(char *,char *,int,char **,char *,int,char *,int);
+typedef int CKSSHCALLBACK uq_mtxt_func(char *,char **,int,struct txtbox[]);
+typedef int CKSSHCALLBACK uq_ok_func(char *,char *,int,char **,int);
+typedef int CKSSHCALLBACK uq_file_func(char *,char *,int,char **,char *,char *,int);
+typedef int CKSSHCALLBACK zmkdir_func(char *);
+typedef int CKSSHCALLBACK ckmakxmsg_func(char * buf, int len, char *s1, char *s2, char *s3,
+            char *s4, char *s5, char *s6, char *s7, char *s8, char *s9,
+            char *s10, char *s11, char *s12);
+typedef char* CKSSHCALLBACK whoami_func();
+typedef char* CKSSHCALLBACK GetAppData_func(int);
+typedef char* CKSSHCALLBACK GetHomePath_func();
+typedef char* CKSSHCALLBACK GetHomeDrive_func();
+typedef int CKSSHCALLBACK ckstrncpy_func(char * dest, const char * src, int len);
+typedef int CKSSHCALLBACK debug_logging_func();
+typedef unsigned char* CKSSHCALLBACK get_display_func();
+typedef int CKSSHCALLBACK parse_displayname_func(char *displayname, int *familyp,
+            char **hostp, int *dpynump, int *scrnump, char **restp);
+
 #ifdef SSH_DLL
 
 /*

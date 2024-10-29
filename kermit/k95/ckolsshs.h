@@ -268,7 +268,9 @@ typedef struct {
  * @param rows Out - number of rows (lines)
  * @param cols Out - number of columns (chars)
  */
-void get_current_terminal_dimensions(int* rows, int* cols);
+void
+CKSSHCALLBACK
+get_current_terminal_dimensions(int* rows, int* cols);
 
 
 /** Constructs and populates a new ssh_parameters_t.

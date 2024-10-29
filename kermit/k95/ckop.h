@@ -13,8 +13,15 @@
 #endif /* OS2 */
 #endif /* NT */
 
-typedef U32 CKDEVDLLENTRY p_transfer_func(P_CFG *);
 #ifdef XYZ_DLL
+typedef U32 CKDEVDLLENTRY p_transfer_func(P_CFG *);
+#else /* XYZ_DLL */
+typedef U32 p_transfer_func(P_CFG *);
+#endif /* XYZ_DLL */
+
+#ifdef XYZ_DLL
+extern int load_p_dll(void);
+extern int unload_p_dll(void);
 #ifdef XYZ_DLL_CLIENT
 extern p_transfer_func * p_transfer;
 #else /* XYZ_DLL_CLIENT */
@@ -23,6 +30,4 @@ extern p_transfer_func p_transfer;
 #else /* XYZ_DLL */
 extern p_transfer_func p_transfer;
 #endif /* XYZ_DLL */
-extern int load_p_dll(void);
-extern int unload_p_dll(void);
 extern int p(int sstate);

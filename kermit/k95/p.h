@@ -1403,23 +1403,26 @@ typedef struct _P_CFG {
 
     U16 * control_prefix_table ;
 
-    /* A pointer to a 256 element array in which each cell is either */
-    /* 0 or 1 depending on whether that character position is to be  */
-    /* prefixed.                                                     */
+/*
+  This pointer points to a 256 element array in which each cell
+  is either 0 or 1 depending on whether that character position
+  is to be prefixed.
+*/
 
     U32 (CKDEVAPI * exe_pushback_func)(U8 *, U32);
-    /*
-    This function is called to push back the unused bytes left over
-    at the end of the transfer.
 
-    Parameters:
+/*
+  This function is called to push back the unused bytes left over
+  at the end of the transfer.
 
-    1 - U8 * bytes to restore
-    2 - U32  number of bytes
+  Parameters:
 
-    Returns 0 for success
+  1 - U8 * bytes to restore
+  2 - U32  number of bytes
 
-    */
+  Returns 0 for success
+
+*/
 
 } P_CFG;
 

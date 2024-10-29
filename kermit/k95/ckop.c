@@ -66,7 +66,7 @@ load_p_dll(void) {
 #endif /* NT */
 
 #ifdef NT
-    dll_handle = LoadLibrary( "P95.DLL" ) ;
+    dll_handle = LoadLibrary( CKDEV_MODULE_NAME ".DLL" ) ;
     if ( !dll_handle )
     {
         rc = GetLastError() ;
@@ -82,19 +82,19 @@ load_p_dll(void) {
     }
 #else
     exe_path = GetLoadPath();
-    sprintf(path, "%.*sP2.DLL", (int)get_dir_len(exe_path), exe_path);
+    sprintf(path, "%.*s" CKDEV_MODULE_NAME ".DLL", (int)get_dir_len(exe_path), exe_path);
     rc = DosLoadModule(NULL, 0L, path, &dll_handle);
     if (rc) {
         /* P.DLL was not found in directory specified with LIBPATH, let's look */
         /* up for it from the directory where P.EXE was ran from. */
-        rc = DosLoadModule(NULL, 0L, "P2", &dll_handle);
+        rc = DosLoadModule(NULL, 0L, CKDEV_MODULE_NAME, &dll_handle);
         if (rc)
             debug(F101,"load_p_dll - Unable to load module: rc","",rc);
     }
     /* Query the address of p_transfer() entry function */
     rc = DosQueryProcAddr(dll_handle,
                            0,
-                           "p_transfer",
+                           CKDEV_ENTRY_NAME,
                            (PFN *)&p_transfer);
     if (rc)
         debug(F101,"load_p_dll - Unable to find p_transfer()","",rc);

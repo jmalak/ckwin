@@ -458,7 +458,7 @@
 
     5 - U32 opt_arg
 
-      An optional argument depending on error_type. See PS_ERROR_* defines.
+      An optional argument depending on error_type. See P_ERROR_* defines.
 
    p_transfer() will return soon after this with a return value of 1.
 */
@@ -1053,7 +1053,7 @@ typedef struct _P_CFG {
    functions.
 */
 
-  U32 (CKDEVAPI * status_func)(U32, ...);
+  U32 (CKDEVAPI * status_func)(U32, status_args *);
 /*
    This function is called to inform the calling program about
    progress of file transfer.
@@ -1069,6 +1069,11 @@ typedef struct _P_CFG {
 
         status_type. For each status_type's parameters see
         the comments in PS_* defines above.
+
+	if no parameter is passed then use NULL pointer
+	if single parameter then cast it to pointer
+	if more then single parameter then use pointer to status_args
+	  structure which contains up to 5 parameters
 */
 
   U32 (CKDEVAPI * r_open_func)(U8 **,

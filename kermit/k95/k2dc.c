@@ -1,9 +1,6 @@
 /***************************/
 /* OS/2 API support        */
 /***************************/
-#ifndef OS2
-#define OS2
-#endif /* OS2 */
 #define INCL_DOS
 #define INCL_VIO
 #define INCL_BASE

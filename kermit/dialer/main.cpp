@@ -15,8 +15,6 @@
 #include "kwinmgr.hpp"
 #ifdef WIN32
 extern "C" {
-//#define OS2 
-//#define NT  
 #include "ckcdeb.h"
 #include "ckoetc.h"
 #ifndef NODIAL

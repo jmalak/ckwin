@@ -678,7 +678,7 @@ static struct keytab filtab[] = {
 #ifdef COMMENT /* Not implemented (but see CHMOD) */
     { "permissions",      XYF_PRM, CM_INV },
     { "protection",       XYF_PRM, 0 },
-#endif /* COMMENt */
+#endif /* COMMENT */
 #ifdef VMS
     { "record-length",    XYFILR, 0 },
 #endif /* VMS */

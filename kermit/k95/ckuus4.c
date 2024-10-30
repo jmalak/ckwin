@@ -12688,7 +12688,7 @@ fneval(fn,argp,argn,xp) char *fn, *argp[]; int argn; char * xp;
 	} else
 	  failed = 1;
 	/* Here we might also want check against "*@*.*" */
-#endif	/* COMMENt */
+#endif	/* COMMENT */
       xemail:
 	ckstrncpy(fnval,ap,FNVALL);
 	goto fnend;

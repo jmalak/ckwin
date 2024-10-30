@@ -64,10 +64,6 @@
 #include "kdemo.hpp"
 
 extern "C" {
-#define OS2
-#ifdef WIN32
-#define NT
-#endif /* WIN32 */
 #include "ckcdeb.h"             /* Typedefs, debug formats, etc */
 #include "ckucmd.h"
 #include "ckoetc.h"

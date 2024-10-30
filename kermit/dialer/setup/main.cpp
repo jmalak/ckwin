@@ -29,12 +29,6 @@
 
 #ifdef WIN32
 extern "C" {
-#ifndef OS2
-#define OS2
-#endif
-#ifndef NT
-#define NT  
-#endif
 #include "ckcdeb.h"
 #define TAPI_CURRENT_VERSION 0x00010004
 #include <tapi.h>

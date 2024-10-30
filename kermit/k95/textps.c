@@ -133,12 +133,6 @@ char *copyright = "Copyright (C) 1991, 1996, Trustees of Columbia University";
 /* Here we define OS2NTDOS if either OS2, MSDOS, or NT is defined, for items */
 /* common to OS/2, MS-DOS, and Windows NT/95 ... */
 
-#ifdef __EMX__
-#ifndef OS2
-#define OS2
-#endif /* OS2 */
-#endif /* __EMX__ */
-
 #ifdef OS2
 #ifndef OS2NTDOS
 #define OS2NTDOS

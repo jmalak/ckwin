@@ -43,6 +43,7 @@ WNT_LIBS=wnt_zil.lib ndirect.lib nservice.lib nstorage.lib libcmt.lib kernel32.l
 # CTL3D32 is only available on Visual C++ 6.0 and earlier.
 WNT_LIBS=$(WNT_LIBS) ctl3d32.lib
 !endif
+!endif
 
 !else
 

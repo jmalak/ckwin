@@ -90,6 +90,10 @@ OS2_RC=rc
 #OS2_CPP_OPTS=/c /D__OS2__ /DOS2 /Gx+ /Sp1 /FiZIL.SYM /SiZIL.SYM
 #OS2_LINK_OPTS=/BASE:0x10000 /PM:PM /NOI /NOE 
 # ----- Next line for pre-compiled headers and optimization -----------------
+OS2_LIBS=os2_zil.lib odirect.lib oservice.lib ostorage.lib
+OS2_LIB_OPTS=
+OS2_RC_OPTS=
+OS2_OBJS=
 !if "$(CMP)" == "OWWCL"
 # ICC   WCC386
 # /Gx+  -xs         Enable generation of C++ Exception Handling Code (watcom: -xs = balanced exception handling)
@@ -119,19 +123,11 @@ OS2_RC=rc
 #
 # -c -xs
 OS2_CPP_OPTS=-DOS2 -DCKODIALER -zp=1 -bm -Fh -bt=os2
-OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000
-OS2_LIB_OPTS=
-OS2_RC_OPTS=
-OS2_OBJS=
-OS2_LIBS=os2_zil.lib,odirect.lib,oservice.lib,ostorage.lib
+OS2_LINK_OPTS=SYSTEM os2v2_pm OP ST=96000 libpath '$(%CK_ZINC_LIB)'
+OS2_LIBS=L {$(OS2_LIBS)}
 !else
 OS2_CPP_OPTS=/c /D__OS2__ /DOS2 /DCKODIALER /Gx+ /Sp1 -Sm -G5 -Gt -Gd- -Gn+ -J -Fi+ -Si+ -Gi+ -Gl+ -O -Oi25 -Gm
 OS2_LINK_OPTS=/BASE:0x10000 /PM:PM /NOI /NOE
-OS2_LINK_OUT=
-OS2_LIB_OPTS=
-OS2_RC_OPTS=
-OS2_OBJS=
-OS2_LIBS=os2_zil.lib odirect.lib oservice.lib ostorage.lib
 !endif
 
 .SUFFIXES : .cpp .c
@@ -300,9 +296,9 @@ k2dial.exe: main.obo dialer.obo lstitm.obo kconnect.obo \
     ksetterminal.obo,ksetxfer.obo,ksetserial.obo,ksettelnet.obo,ksetkerberos.obo,\
     ksettls.obo,ksetkeyboard.obo,ksetlogin.obo,ksetprinter.obo,ksetlogs.obo,\
     ksetssh.obo,ksetgui.obo,ksetftp.obo,ksetdlg.obo,kabout.obo,ksettcp.obo \
-    L $(OS2_LIBS)
+    $(OS2_LIBS)
     # k2dial.rc is empty so no need to do anything with the resource compiler.
-    #rc k2dial.rc k2dial.exe
+    wrc -q -bt=os2 k2dial.rc k2dial.exe
 !else
 	$(OS2_LINK) $(OS2_LINK_OPTS) -out:k2dial.exe \
     main.obo dialer.obo lstitm.obo kconnect.obo kdialopt.obo kquick.obo kdconfig.obo\

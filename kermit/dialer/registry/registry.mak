@@ -32,7 +32,7 @@ WNT_LIBRARIAN=lib /nologo
 
 !if "$(CMP)" == "VCXX"
 
-#WNT_CPP_OPTS= -c -MT -W3 -D_X86_=1 -DWIN32 -DOS2 -DNT -I.\.. /Zi -J -noBool
+#WNT_CPP_OPTS= -c -MT -W3 -D_X86_=1 -DWIN32 -DNT -I.\.. /Zi -J -noBool
 #WNT_LINK_OPTS=-align:0x1000 -subsystem:windows -entry:WinMainCRTStartup /MAP /Debug:full /Debugtype:cv 
 WNT_CPP_OPTS=-c -MT -W3 -DWIN32 -DOS2 -DNT -I.\.. -J -noBool
 WNT_LINK_OPTS=-subsystem:windows -entry:WinMainCRTStartup /MAP

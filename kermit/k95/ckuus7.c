@@ -249,9 +249,9 @@ extern int tn_wait_flg;
 
 VOID
 #ifdef CK_ANSIC
-slrestor(void) 
+slrestor(void)
 #else
-slrestor() 
+slrestor()
 #endif /* CK_ANSIC */
 {
 #ifdef CK_AUTHENTICATION

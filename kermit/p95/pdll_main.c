@@ -53,6 +53,7 @@
 #include "pdll_z.h"
 #include "pdll_z_global.h"
 #include "ckop.h"
+#include "p_status.h"
 
 jmp_buf p_jmp_buf;
 
@@ -305,10 +306,10 @@ p_transfer() P_CFG *param_p_cfg ;
 	break;
     }
     if (!pdll_aborted) {
-	if (p_cfg->status_func(PS_TRANSFER_DONE))
+	if (p_cfg->status_func(PS_TRANSFER_DONE, NULL))
 	    user_aborted();
     } else if (pdll_aborted == A_REMOTE) {
-	if (p_cfg->status_func(PS_REMOTE_ABORTED))
+	if (p_cfg->status_func(PS_REMOTE_ABORTED, NULL))
 	    user_aborted();
     }
     cleanup();

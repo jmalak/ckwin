@@ -712,7 +712,7 @@ wcos2d:
         CC2="-Fh -d3 -br" \
 !endif
         OUT="-Fe=" O=".obj" \
-	    OPT=" " \
+        OPT=" " \
         DEBUG="-DNDEBUG" \
         DLL="-bd" \
 	    CFLAGS="-zq -zp=1 -bm -bt=os2 -aa" \
@@ -905,7 +905,7 @@ COMMODE_OBJ = commode.obj
 
 !ifdef PLATFORM
 !if "$(PLATFORM)" == "OS2"
-LIBS = os2386.lib rexx.lib
+LIBS = rexx.lib
 
 # Open Watcom doesn't have bigmath.lib
 #  -> this likely comes from the SRP distribution (srp\srp-1.4\cryptolib_1.1\VISUALC\BIGMATH)
@@ -928,9 +928,9 @@ LIBS = $(LIBS) wshload.lib
 !endif
 
 !else
-KUILIBS = kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
+KUILIBS = $(COMMODE_OBJ) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
         advapi32.lib shell32.lib rpcrt4.lib rpcns4.lib wsock32.lib \
-        winmm.lib comctl32.lib mpr.lib $(COMMODE_OBJ)
+        winmm.lib comctl32.lib mpr.lib
 # vdmdbg.lib
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 KUILIBS = $(KUILIBS) $(SSH_LIB) ws2_32.lib
@@ -970,8 +970,8 @@ KUILIBS = $(KUILIBS) libcmt.lib
 
 # Commented out KUILIBS in K95 2.1.3: msvcrt.lib libsrp.lib bigmath.lib
 
-LIBS = kernel32.lib user32.lib gdi32.lib wsock32.lib shell32.lib\
-       winmm.lib mpr.lib advapi32.lib winspool.lib $(COMMODE_OBJ)
+LIBS = $(COMMODE_OBJ) kernel32.lib user32.lib gdi32.lib wsock32.lib shell32.lib\
+       winmm.lib mpr.lib advapi32.lib winspool.lib
 
 !if "$(CKF_SSH)" == "yes" && "$(CKF_DYNAMIC_SSH)" != "yes"
 LIBS = $(LIBS) $(SSH_LIB) ws2_32.lib

@@ -243,7 +243,7 @@ int main( void)
             MPFROMP( WinSubclassWindow( hwndClient, ClientWndProc)), 0L) ;
 
         /* Start processing client requests */
-        _beginthread( clipsrv, NULL, 65535, NULL ) ;
+        _beginthread( clipsrv, 0, 65535, NULL ) ;
         rc = DosReleaseMutexSem( hmuxClipbrdSrv ) ;
 
         while( WinGetMsg( hab, &qmsg, NULLHANDLE, 0L, 0L))

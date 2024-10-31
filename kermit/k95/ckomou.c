@@ -14,6 +14,7 @@ char *ckomouv = "Mouse Support 10.0, 1 Oct 2022";
 #ifdef OS2MOUSE
 #ifdef NT
 #include <windows.h>
+#include <process.h>
 #else /* NT */
 #include <process.h>
 #define INCL_WINSHELLDATA
@@ -29,6 +30,7 @@ char *ckomouv = "Mouse Support 10.0, 1 Oct 2022";
 #define INCL_DOSASYNCTIMER
 #include <os2.h>
 #undef COMMENT                /* COMMENT is defined in os2.h */
+#include <process.h>
 #endif /* NT */
 
 #include "ckuusr.h"

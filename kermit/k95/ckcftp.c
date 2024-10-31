@@ -220,6 +220,12 @@ extern int TlsIndex;
 #include "ckctel.h"                     /* (then why include it again?) */
 #include "ckcxla.h"
 
+#ifdef NT
+#include <winsock.h>
+#else /* NT */
+#include "ckotcp.h"
+#endif /* NT */
+
 #ifdef CK_SSL
 #include "ckuath.h"			/* SMS 2007/02/15 */
 #endif /* def CK_SSL */
@@ -848,7 +854,7 @@ extern long filcnt, xfsecs, tfcps, cps, oldcps;
 
 #ifdef FTP_TIMEOUT
 int ftp_timed_out = 0;
-long ftp_timeout = 0;
+long ftp_timeout_sec = 0;
 #endif	/* FTP_TIMEOUT */
 
 #ifdef GFTIMER
@@ -2884,7 +2890,7 @@ dosetftp() {
           return(x);
         if ((y = cmcfm()) < 0)
           return(y);
-	ftp_timeout = z;
+        ftp_timeout_sec = z;
 	return(success = 1);
 #endif	/* FTP_TIMEOUT */
 
@@ -4988,14 +4994,14 @@ check_data_connection(fd,fc) int fd, fc;
     struct timeval tv;
     fd_set in, out, err;
 
-    if (ftp_timeout < 1L)
+    if (ftp_timeout_sec < 1L)
       return(0);
 
     FD_ZERO(&in);
     FD_ZERO(&out);
     FD_ZERO(&err);
     FD_SET(fd,fc ? &out : &in);
-    tv.tv_sec = ftp_timeout;		/* Time limit */
+    tv.tv_sec = ftp_timeout_sec;		/* Time limit */
     tv.tv_usec = 0L;
 
 #ifdef INTSELECT
@@ -5005,13 +5011,13 @@ check_data_connection(fd,fc) int fd, fc;
 #endif /* INTSELECT */
 #else /* BSDSELECT */
 #ifdef IBMSELECT
-    if (ftp_timeout < 1L)
+    if (ftp_timeout_sec < 1L)
         return(0);
 
     if (fc) { /* write */
-        x = select(&fd, 0, 1, 0, ftp_timeout * 1000L);
+        x = select(&fd, 0, 1, 0, ftp_timeout_sec * 1000L);
     } else { /* read */
-        x = select(&fd, 1, 0, 0, ftp_timeout * 1000L);
+        x = select(&fd, 1, 0, 0, ftp_timeout_sec * 1000L);
     }
 #endif /* IBMSELECT */
 #endif /* BSDSELECT */
@@ -8979,7 +8985,7 @@ shoftp(brief) int brief;
       case FTT_TEN: s = "tenex"; break;
     }
 #ifdef FTP_TIMEOUT
-    printf(" ftp timeout:                   %ld\n",ftp_timeout);
+    printf(" ftp timeout:                   %ld\n",ftp_timeout_sec);
 #endif	/* FTP_TIMEOUT */
     printf(" ftp type:                      %s\n",s);
     printf(" ftp get-filetype-switching:    %s\n",showoff(get_auto));
@@ -11750,14 +11756,14 @@ empty(fd_set * mask, int sec)
 empty(mask, sec) fd_set * mask; int sec;
 #endif /* CK_ANSIC */
 {
-    struct timeval t;
-    t.tv_sec = (long) sec;
-    t.tv_usec = 0L;
+    struct timeval tv;
+    tv.tv_sec = sec;
+    tv.tv_usec = 0L;
     debug(F100,"ftp empty calling select...","",0);
 #ifdef INTSELECT
-    x = select(32, (int *)mask, NULL, NULL, &t);
+    x = select(32, (int *)mask, NULL, NULL, &tv);
 #else
-    x = select(32, mask, (fd_set *) 0, (fd_set *) 0, &t);
+    x = select(32, mask, NULL, NULL, &tv);
 #endif /* INTSELECT */
     debug(F101,"ftp empty select","",x);
     return(x);
@@ -11768,7 +11774,7 @@ static int
 empty(mask, cnt, sec) int * mask, sec;
                       int   cnt;
 {
-    return(select(mask,cnt,0,0,sec*1000));
+    return(select(mask, cnt, 0, 0, sec * 1000L));
 }
 #endif /* IBMSELECT */
 #endif /* BSDSELECT */
@@ -14897,7 +14903,7 @@ cancel_remote(din) int din;
         lostpeer();
     }
     debug(F110,"ftp cancel_remote","D",0);
-    if (din && select(&din, 1,0,0,1) ) {
+    if (din && select(&din, 1, 0, 0, 1000L) ) {
 #ifdef CK_SSL
         if (ssl_ftp_data_active_flag) {
             int count, error;
@@ -15669,7 +15675,7 @@ ftp_reset() {
     FD_ZERO(&mask);
     while (nfnd > 0) {
         FD_SET(csocket, &mask);
-        if ((nfnd = empty(&mask,0)) < 0) {
+        if ((nfnd = empty(&mask, 0)) < 0) {
             perror("reset");
             ftpcode = -1;
             lostpeer();
@@ -15682,7 +15688,7 @@ ftp_reset() {
 #ifdef IBMSELECT
     int nfnd = 1;
     while (nfnd > 0) {
-        if ((nfnd = empty(&csocket,1,0)) < 0) {
+        if ((nfnd = empty(&csocket, 1, 0)) < 0) {
             perror("reset");
             ftpcode = -1;
             lostpeer();

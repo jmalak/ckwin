@@ -27,9 +27,9 @@
 # ----- Windows NT compiler options -----------------------------------------
 # for debug:    add /Zi to CPP_OPTS
 #               add /DEBUG:MAPPED,FULL /DEBUGTYPE:CV to LINK_OPTS
-WNT_CPP=cl
-WNT_LINK=link
-WNT_LIBRARIAN=lib
+WNT_CPP=cl /nologo
+WNT_LINK=link /nologo
+WNT_LIBRARIAN=lib /nologo
 
 !if "$(CMP)" == "VCXX"
 
@@ -72,10 +72,10 @@ WNT_OBJS=
 
 # ----- OS/2 compiler options -----------------------------------------------
 !if "$(CMP)" == "OWWCL"
-OS2_CPP=wpp386
-OS2_LINK=wlink
-OS2_LIBRARIAN=wlib
-OS2_RC=wrc
+OS2_CPP=wpp386 -zq
+OS2_LINK=wlink op quiet
+OS2_LIBRARIAN=wlib -zq
+OS2_RC=wrc -zq
 !else
 OS2_CPP=icc
 OS2_LINK=ilink

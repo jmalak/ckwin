@@ -1136,7 +1136,7 @@ kverb_thread(void* param)
     }
 }
 
-/* 
+/*
  * K_DUMP will spawn a thread from dokverb()
  */
 
@@ -1167,7 +1167,7 @@ putkverb( int kmode, int k ) {
              km == K_HOLDSCRN ||
              km == K_EXIT ||
              km == K_HANGUP ||
-	     km == K_DUMP && markmodeflag[kmode] != notmarking ||
+             km == K_DUMP && markmodeflag[kmode] != notmarking ||
 #ifdef OS2MOUSE
              km >= K_MOUSE_MIN && km <= K_MOUSE_MAX
 #endif /* OS2MOUSE */
@@ -1190,7 +1190,7 @@ putkverb( int kmode, int k ) {
             if ( kc ) {
                 kc->kmode = kmode;
                 kc->km = km;
-                _beginthread(&kverb_thread,
+                _beginthread(kverb_thread,
 #ifndef NT
                               0,
 #endif /* NT */
@@ -2138,7 +2138,7 @@ win32KeyEvent( int mode, KEY_EVENT_RECORD keyrec )
                     CharToOemBuff( &k2, &k2x, 1);
                     debug(F111,"win32Key","k2x",k2x);
 
-#ifdef COMMENT  
+#ifdef COMMENT
 /* It was a good try, but it is not safe.  There is a reason that we */
 /* don't allow the thread that reads the keystrokes to process them  */
 /* and that is because that means the thread can block waiting for   */
@@ -2160,11 +2160,11 @@ win32KeyEvent( int mode, KEY_EVENT_RECORD keyrec )
                         con2host(evt);
                     }
                     else
-#endif /* COMMENT */    
+#endif /* COMMENT */
                         putkey( mode, k2x ) ;
-                }   
-#endif /* KUI */        
-            }       
+                }
+#endif /* KUI */
+            }
     } /* if (c >= 0 ) */
 }
 

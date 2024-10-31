@@ -30,7 +30,7 @@
 #ifdef NT
 HINSTANCE hSSL = NULL;
 #else /* NT */
-HMODULE hSSL = NULL;
+HMODULE hSSL = 0;
 #endif /* NT */
 
 int ssl_dll_loaded=0;
@@ -39,7 +39,7 @@ int ssl_dll_loaded=0;
 HINSTANCE hX5092UID=NULL;
 #define SEM_INDEFINITE_WAIT INFINITE
 #else /* NT */
-HMODULE hX5092UID=NULL;
+HMODULE hX5092UID = 0;
 #endif /* NT */
 
 #ifdef NOT_KERMIT

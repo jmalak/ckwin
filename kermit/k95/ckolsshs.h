@@ -263,14 +263,6 @@ typedef struct {
 } ssh_client_t;
 
 
-/** Gets the current terminal (VTERM) dimensions
- *
- * @param rows Out - number of rows (lines)
- * @param cols Out - number of columns (chars)
- */
-void get_current_terminal_dimensions(int* rows, int* cols);
-
-
 /** Constructs and populates a new ssh_parameters_t.
  *
  * @param hostname Hostname to connect to

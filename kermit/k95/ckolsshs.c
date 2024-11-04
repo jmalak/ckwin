@@ -190,7 +190,7 @@ ssh_parameters_t* ssh_parameters_new(
     params->agent_location = NULL;
     params->agent_forwarding = FALSE;
 
-    params->identity_files = identity_files;
+    params->identity_files = (char**)identity_files;
 
     params->existing_socket = socket;
 

@@ -3337,31 +3337,31 @@ static int
 static void
 (KRB5_CALLCONV_C  *p_k4_des_fixup_key_parity) P((Block))=NULL;
 
-typedef int   (*libdes_random_key_t)(Block);
-typedef void  (*libdes_random_seed_t)(Block);
-typedef int   (*libdes_key_sched_t)(Block, Schedule);
-typedef void  (*libdes_ecb_encrypt_t)(Block, Block, Schedule, int);
-typedef int   (*libdes_string_to_key_t)(char *, Block);
-typedef int   (*libdes_fixup_key_parity_t)(Block);
-typedef int   (*libdes_pcbc_encrypt_t)(Block, Block, long, Schedule, Block, int);
+typedef int   libdes_random_key_dllfunc(Block);
+typedef void  libdes_random_seed_dllfunc(Block);
+typedef int   libdes_key_sched_dllfunc(Block, Schedule);
+typedef void  libdes_ecb_encrypt_dllfunc(Block, Block, Schedule, int);
+typedef int   libdes_string_to_key_dllfunc(char *, Block);
+typedef int   libdes_fixup_key_parity_dllfunc(Block);
+typedef int   libdes_pcbc_encrypt_dllfunc(Block, Block, long, Schedule, Block, int);
 
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-libdes_random_key_t libdes_random_key=NULL;
-libdes_random_seed_t libdes_random_seed=NULL;
-libdes_key_sched_t libdes_key_sched=NULL;
-libdes_ecb_encrypt_t libdes_ecb_encrypt=NULL;
-libdes_string_to_key_t libdes_string_to_key=NULL;
-libdes_fixup_key_parity_t libdes_fixup_key_parity=NULL;
-libdes_pcbc_encrypt_t libdes_pcbc_encrypt=NULL;
+libdes_random_key_dllfunc *dllfuncp_libdes_random_key = NULL;
+libdes_random_seed_dllfunc *dllfuncp_libdes_random_seed = NULL;
+libdes_key_sched_dllfunc *dllfuncp_libdes_key_sched = NULL;
+libdes_ecb_encrypt_dllfunc *dllfuncp_libdes_ecb_encrypt = NULL;
+libdes_string_to_key_dllfunc *dllfuncp_libdes_string_to_key = NULL;
+libdes_fixup_key_parity_dllfunc *dllfuncp_libdes_fixup_key_parity = NULL;
+libdes_pcbc_encrypt_dllfunc *dllfuncp_libdes_pcbc_encrypt = NULL;
 #else /* CRYPT_DLL */
-int   libdes_random_key(Block);
-void  libdes_random_seed(Block);
-int   libdes_key_sched(Block, Schedule);
-void  libdes_ecb_encrypt(Block, Block, Schedule, int);
-int   libdes_string_to_key(char *, Block);
-int   libdes_fixup_key_parity(Block);
-int   libdes_pcbc_encrypt(Block, Block, long, Schedule, Block, int);
+libdes_random_key_dllfunc libdes_random_key;
+libdes_random_seed_dllfunc libdes_random_seed;
+libdes_key_sched_dllfunc libdes_key_sched;
+libdes_ecb_encrypt_dllfunc libdes_ecb_encrypt;
+libdes_string_to_key_dllfunc libdes_string_to_key;
+libdes_fixup_key_parity_dllfunc libdes_fixup_key_parity;
+libdes_pcbc_encrypt_dllfunc libdes_pcbc_encrypt;
 #endif /* CRYPT_DLL */
 #endif /* LIBDES */
 
@@ -3371,8 +3371,8 @@ ck_des_new_random_key(Block B)
     int rc=0;
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_random_key ) {
-        rc = libdes_random_key(B);
+    if ( dllfuncp_libdes_random_key ) {
+        rc = dllfuncp_libdes_random_key(B);
         return(rc);
     }
     else
@@ -3405,8 +3405,8 @@ ck_des_set_random_generator_seed(Block B)
 {
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_random_seed ) {
-        libdes_random_seed(B);
+    if ( dllfuncp_libdes_random_seed ) {
+        dllfuncp_libdes_random_seed(B);
         return;
     }
 #else /* CRYPT_DLL */
@@ -3428,8 +3428,8 @@ ck_des_key_sched(Block B, Schedule S)
 {
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_key_sched ) {
-        return libdes_key_sched(B,S);
+    if ( dllfuncp_libdes_key_sched ) {
+        return dllfuncp_libdes_key_sched(B,S);
     }
     else
         return(-3);
@@ -3472,8 +3472,8 @@ ck_des_ecb_encrypt(Block B1, Block B2, Schedule S, int I)
 
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_ecb_encrypt ) {
-        libdes_ecb_encrypt(B1,B2,S,I);
+    if ( dllfuncp_libdes_ecb_encrypt ) {
+        dllfuncp_libdes_ecb_encrypt(B1,B2,S,I);
         goto exit_des_ecb_encrypt;
     }
 #else /* CRYPT_DLL */
@@ -3499,8 +3499,8 @@ ck_des_string_to_key(char * p, Block B)
 {
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_string_to_key )
-        return(libdes_string_to_key(p,B));
+    if ( dllfuncp_libdes_string_to_key )
+        return(dllfuncp_libdes_string_to_key(p,B));
     else
         return(0);
 #else /* CRYPT_DLL */
@@ -3526,8 +3526,8 @@ ck_des_fixup_key_parity(Block B)
 {
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_fixup_key_parity ) {
-        libdes_fixup_key_parity(B);
+    if ( dllfuncp_libdes_fixup_key_parity ) {
+        dllfuncp_libdes_fixup_key_parity(B);
         return;
     }
 #else /* CRYPT_DLL */
@@ -3551,8 +3551,8 @@ ck_des_pcbc_encrypt(Block input, Block output, long length,
 {
 #ifdef LIBDES
 #ifdef CRYPT_DLL
-    if ( libdes_pcbc_encrypt ) {
-        libdes_pcbc_encrypt(input,output,length,schedule,ivec,enc);
+    if ( dllfuncp_libdes_pcbc_encrypt ) {
+        dllfuncp_libdes_pcbc_encrypt(input,output,length,schedule,ivec,enc);
         return;
     }
 #else /* CRYPT_DLL */
@@ -3576,43 +3576,43 @@ ck_des_pcbc_encrypt(Block input, Block output, long length,
 #endif /* CK_DES */
 
 #ifdef CRYPT_DLL
-typedef int  (*p_crypt_dll_init_t)(crypt_dll_init_data *);
-typedef int  (*p_encrypt_parse_t)(unsigned char *, int);
-typedef void (*p_encrypt_init_t)(kstream,int);
-typedef int  (*p_encrypt_session_key_t)(Session_Key *, int);
-typedef int  (*p_encrypt_dont_support_t)(int);
-typedef void (*p_encrypt_send_request_start_t)(void);
-typedef int  (*p_encrypt_request_start_t)(void);
-typedef int  (*p_encrypt_send_request_end_t)(void);
-typedef void (*p_encrypt_send_end_t)(void);
-typedef void (*p_encrypt_send_support_t)(void);
-typedef int  (*p_encrypt_is_encrypting_t)(void);
-typedef int  (*p_encrypt_is_decrypting_t)(void);
-typedef int  (*p_get_crypt_table_t)(struct keytab ** pTable, int * pN);
-typedef int  (*p_des_is_weak_key_t)(Block);
-typedef char * (*p_crypt_dll_version_t)();
+typedef int  encrypt_parse_dllfunc(unsigned char *, int);
+typedef void encrypt_init_dllfunc(kstream,int);
+typedef int  encrypt_session_key_dllfunc(Session_Key *, int);
+typedef int  encrypt_dont_support_dllfunc(int);
+typedef void encrypt_send_request_start_dllfunc(void);
+typedef int  encrypt_request_start_dllfunc(void);
+typedef int  encrypt_send_request_end_dllfunc(void);
+typedef void encrypt_send_end_dllfunc(void);
+typedef void encrypt_send_support_dllfunc(void);
+typedef int  encrypt_is_encrypting_dllfunc(void);
+typedef int  encrypt_is_decrypting_dllfunc(void);
+typedef int  get_crypt_table_dllfunc(struct keytab ** pTable, int * pN);
+typedef int  des_is_weak_key_dllfunc(Block);
+typedef char * crypt_dll_version_dllfunc();
 
-static p_crypt_dll_init_t p_crypt_dll_init=NULL;
-static p_encrypt_parse_t p_encrypt_parse=NULL;
-static p_encrypt_init_t p_encrypt_init=NULL;
-static p_encrypt_session_key_t p_encrypt_session_key=NULL;
-static p_encrypt_dont_support_t p_encrypt_dont_support=NULL;
-static p_encrypt_send_request_start_t p_encrypt_send_request_start=NULL;
-static p_encrypt_request_start_t p_encrypt_request_start=NULL;
-static p_encrypt_send_request_end_t p_encrypt_send_request_end=NULL;
-static p_encrypt_send_end_t p_encrypt_send_end=NULL;
-static p_encrypt_send_support_t p_encrypt_send_support=NULL;
-static p_encrypt_is_encrypting_t p_encrypt_is_encrypting=NULL;
-static p_encrypt_is_decrypting_t p_encrypt_is_decrypting=NULL;
-static p_get_crypt_table_t p_get_crypt_table=NULL;
-static p_des_is_weak_key_t p_des_is_weak_key=NULL;
-static p_crypt_dll_version_t p_crypt_dll_version=NULL;
+static encrypt_parse_dllfunc *dllfuncp_encrypt_parse = NULL;
+static encrypt_init_dllfunc *dllfuncp_encrypt_init = NULL;
+static encrypt_session_key_dllfunc *dllfuncp_encrypt_session_key = NULL;
+static encrypt_dont_support_dllfunc *dllfuncp_encrypt_dont_support = NULL;
+static encrypt_send_request_start_dllfunc *dllfuncp_encrypt_send_request_start = NULL;
+static encrypt_request_start_dllfunc *dllfuncp_encrypt_request_start = NULL;
+static encrypt_send_request_end_dllfunc *dllfuncp_encrypt_send_request_end = NULL;
+static encrypt_send_end_dllfunc *dllfuncp_encrypt_send_end = NULL;
+static encrypt_send_support_dllfunc *dllfuncp_encrypt_send_support = NULL;
+static encrypt_is_encrypting_dllfunc *dllfuncp_encrypt_is_encrypting = NULL;
+static encrypt_is_decrypting_dllfunc *dllfuncp_encrypt_is_decrypting = NULL;
+static get_crypt_table_dllfunc *dllfuncp_get_crypt_table = NULL;
+static des_is_weak_key_dllfunc *dllfuncp_des_is_weak_key = NULL;
+static crypt_dll_version_dllfunc *dllfuncp_crypt_dll_version = NULL;
+
+static crypt_dll_init_dllentry *dllentryp_crypt_init = NULL;
 
 int
 ck_encrypt_parse(unsigned char * s, int n)
 {
-    if ( p_encrypt_parse )
-        return(p_encrypt_parse(s,n));
+    if ( dllfuncp_encrypt_parse )
+        return(dllfuncp_encrypt_parse(s,n));
     else
         return(0);
 }
@@ -3620,66 +3620,66 @@ ck_encrypt_parse(unsigned char * s, int n)
 void
 ck_encrypt_init(kstream ks, int type)
 {
-    if ( p_encrypt_init )
-        p_encrypt_init(ks,type);
+    if ( dllfuncp_encrypt_init )
+        dllfuncp_encrypt_init(ks,type);
 }
 
 int
 ck_encrypt_dont_support(int type)
 {
-    if ( p_encrypt_dont_support )
-        return p_encrypt_dont_support(type);
+    if ( dllfuncp_encrypt_dont_support )
+        return dllfuncp_encrypt_dont_support(type);
     return(0);
 }
 
 int
 ck_encrypt_session_key(Session_Key * key, int n)
 {
-    if ( p_encrypt_session_key )
-        return p_encrypt_session_key(key,n);
+    if ( dllfuncp_encrypt_session_key )
+        return dllfuncp_encrypt_session_key(key,n);
     return(0);
 }
 
 void
 ck_encrypt_send_support(void)
 {
-    if ( p_encrypt_send_support )
-        p_encrypt_send_support();
+    if ( dllfuncp_encrypt_send_support )
+        dllfuncp_encrypt_send_support();
 }
 
 void
 ck_encrypt_send_request_start(void)
 {
-    if ( p_encrypt_send_request_start )
-        p_encrypt_send_request_start();
+    if ( dllfuncp_encrypt_send_request_start )
+        dllfuncp_encrypt_send_request_start();
 }
 
 void
 ck_encrypt_request_start(void)
 {
-    if ( p_encrypt_request_start )
-        p_encrypt_request_start();
+    if ( dllfuncp_encrypt_request_start )
+        dllfuncp_encrypt_request_start();
 }
 
 void
 ck_encrypt_send_request_end(void)
 {
-    if ( p_encrypt_send_request_end )
-        p_encrypt_send_request_end();
+    if ( dllfuncp_encrypt_send_request_end )
+        dllfuncp_encrypt_send_request_end();
 }
 
 void
 ck_encrypt_send_end(void)
 {
-    if ( p_encrypt_send_end )
-        p_encrypt_send_end();
+    if ( dllfuncp_encrypt_send_end )
+        dllfuncp_encrypt_send_end();
 }
 
 int
 ck_encrypt_is_encrypting(void)
 {
-    if ( p_encrypt_is_encrypting )
-        return(p_encrypt_is_encrypting());
+    if ( dllfuncp_encrypt_is_encrypting )
+        return(dllfuncp_encrypt_is_encrypting());
     else
         return(0);
 }
@@ -3687,8 +3687,8 @@ ck_encrypt_is_encrypting(void)
 int
 ck_encrypt_is_decrypting(void)
 {
-    if ( p_encrypt_is_decrypting )
-        return(p_encrypt_is_decrypting());
+    if ( dllfuncp_encrypt_is_decrypting )
+        return(dllfuncp_encrypt_is_decrypting());
     else
         return(0);
 }
@@ -3696,8 +3696,8 @@ ck_encrypt_is_decrypting(void)
 int
 ck_get_crypt_table(struct keytab ** pTable, int * pN)
 {
-    if (p_get_crypt_table) {
-        return(p_get_crypt_table(pTable,pN));
+    if (dllfuncp_get_crypt_table) {
+        return(dllfuncp_get_crypt_table(pTable,pN));
     } else {
         int i = 0;
         if (*pTable) {
@@ -3725,8 +3725,8 @@ ck_get_crypt_table(struct keytab ** pTable, int * pN)
 int
 ck_des_is_weak_key(Block B)
 {
-    if ( p_des_is_weak_key )
-        return(p_des_is_weak_key(B));
+    if ( dllfuncp_des_is_weak_key )
+        return(dllfuncp_des_is_weak_key(B));
     else
         return(0);      /* assume it is not */
 }
@@ -3735,54 +3735,54 @@ void
 callback_install_dllfunc(char * name, void * func)
 {
     if ( !strcmp(name,"encrypt_parse") )
-        p_encrypt_parse = (p_encrypt_parse_t) func;
+        dllfuncp_encrypt_parse = (encrypt_parse_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_init") )
-        p_encrypt_init = (p_encrypt_init_t) func;
+        dllfuncp_encrypt_init = (encrypt_init_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_session_key") )
-        p_encrypt_session_key = (p_encrypt_session_key_t) func;
+        dllfuncp_encrypt_session_key = (encrypt_session_key_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_dont_support") )
-        p_encrypt_dont_support = (p_encrypt_dont_support_t) func;
+        dllfuncp_encrypt_dont_support = (encrypt_dont_support_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_send_request_start") )
-        p_encrypt_send_request_start = (p_encrypt_send_request_start_t) func;
+        dllfuncp_encrypt_send_request_start = (encrypt_send_request_start_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_request_start") )
-        p_encrypt_request_start = (p_encrypt_request_start_t) func;
+        dllfuncp_encrypt_request_start = (encrypt_request_start_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_send_request_end") )
-        p_encrypt_send_request_end = (p_encrypt_send_request_end_t) func;
+        dllfuncp_encrypt_send_request_end = (encrypt_send_request_end_dllfunc *) func;
     else if ( !strcmp(name, "encrypt_send_end") )
-        p_encrypt_send_end = (p_encrypt_send_end_t) func;
+        dllfuncp_encrypt_send_end = (encrypt_send_end_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_send_support") )
-        p_encrypt_send_support = (p_encrypt_send_support_t) func;
+        dllfuncp_encrypt_send_support = (encrypt_send_support_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_is_encrypting") )
-        p_encrypt_is_encrypting = (p_encrypt_is_encrypting_t) func;
+        dllfuncp_encrypt_is_encrypting = (encrypt_is_encrypting_dllfunc *) func;
     else if ( !strcmp(name,"encrypt_is_decrypting") )
-        p_encrypt_is_decrypting = (p_encrypt_is_decrypting_t) func;
+        dllfuncp_encrypt_is_decrypting = (encrypt_is_decrypting_dllfunc *) func;
     else if ( !strcmp(name,"get_crypt_table") )
-        p_get_crypt_table = (p_get_crypt_table_t) func;
+        dllfuncp_get_crypt_table = (get_crypt_table_dllfunc *) func;
     else if ( !strcmp(name,"des_is_weak_key") )
-        p_des_is_weak_key = (p_des_is_weak_key_t) func;
+        dllfuncp_des_is_weak_key = (des_is_weak_key_dllfunc *) func;
     else if ( !strcmp(name,"libdes_random_key") )
-        libdes_random_key = (libdes_random_key_t) func;
+        dllfuncp_libdes_random_key = (libdes_random_key_dllfunc *) func;
     else if ( !strcmp(name,"libdes_random_seed") )
-        libdes_random_seed = (libdes_random_seed_t) func;
+        dllfuncp_libdes_random_seed = (libdes_random_seed_dllfunc *) func;
     else if ( !strcmp(name,"libdes_key_sched") )
-        libdes_key_sched = (libdes_key_sched_t) func;
+        dllfuncp_libdes_key_sched = (libdes_key_sched_dllfunc *) func;
     else if ( !strcmp(name,"libdes_ecb_encrypt") )
-        libdes_ecb_encrypt = (libdes_ecb_encrypt_t) func;
+        dllfuncp_libdes_ecb_encrypt = (libdes_ecb_encrypt_dllfunc *) func;
     else if ( !strcmp(name,"libdes_string_to_key") )
-        libdes_string_to_key = (libdes_string_to_key_t) func;
+        dllfuncp_libdes_string_to_key = (libdes_string_to_key_dllfunc *) func;
     else if ( !strcmp(name,"libdes_fixup_key_parity") )
-        libdes_fixup_key_parity = (libdes_fixup_key_parity_t) func;
+        dllfuncp_libdes_fixup_key_parity = (libdes_fixup_key_parity_dllfunc *) func;
     else if ( !strcmp(name,"libdes_pcbc_encrypt") )
-        libdes_pcbc_encrypt = (libdes_pcbc_encrypt_t) func;
+        dllfuncp_libdes_pcbc_encrypt = (libdes_pcbc_encrypt_dllfunc *) func;
     else if ( !strcmp(name,"crypt_dll_version") )
-        p_crypt_dll_version = (p_crypt_dll_version_t) func;
+        dllfuncp_crypt_dll_version = (crypt_dll_version_dllfunc *) func;
 }
 
 char *
 ck_crypt_dll_version()
 {
-    if ( p_crypt_dll_version )
-        return(p_crypt_dll_version());
+    if ( dllfuncp_crypt_dll_version )
+        return(dllfuncp_crypt_dll_version());
     else
         return("Encryption provided via external DLL");
 }
@@ -3817,30 +3817,31 @@ ck_crypt_dll_loaddll_eh(void)
         hCRYPT = 0;
 #endif /* NT */
     }
-    p_crypt_dll_init=NULL;
-    p_encrypt_parse=NULL;
-    p_encrypt_init=NULL;
-    p_encrypt_session_key=NULL;
-    p_encrypt_dont_support=NULL;
-    p_encrypt_send_support=NULL;
-    p_encrypt_send_request_start=NULL;
-    p_encrypt_request_start=NULL;
-    p_encrypt_send_request_end=NULL;
-    p_encrypt_send_end=NULL;
-    p_encrypt_is_encrypting=NULL;
-    p_encrypt_is_decrypting=NULL;
-    p_get_crypt_table = NULL;
-    p_des_is_weak_key = NULL;
+    dllentryp_crypt_init = NULL;
 
-    libdes_random_key=NULL;
-    libdes_random_seed=NULL;
-    libdes_key_sched=NULL;
-    libdes_ecb_encrypt=NULL;
-    libdes_string_to_key=NULL;
-    libdes_fixup_key_parity=NULL;
-    libdes_pcbc_encrypt=NULL;
+    dllfuncp_encrypt_parse=NULL;
+    dllfuncp_encrypt_init=NULL;
+    dllfuncp_encrypt_session_key=NULL;
+    dllfuncp_encrypt_dont_support=NULL;
+    dllfuncp_encrypt_send_support=NULL;
+    dllfuncp_encrypt_send_request_start=NULL;
+    dllfuncp_encrypt_request_start=NULL;
+    dllfuncp_encrypt_send_request_end=NULL;
+    dllfuncp_encrypt_send_end=NULL;
+    dllfuncp_encrypt_is_encrypting=NULL;
+    dllfuncp_encrypt_is_decrypting=NULL;
+    dllfuncp_get_crypt_table = NULL;
+    dllfuncp_des_is_weak_key = NULL;
 
-    p_crypt_dll_version=NULL;
+    dllfuncp_libdes_random_key=NULL;
+    dllfuncp_libdes_random_seed=NULL;
+    dllfuncp_libdes_key_sched=NULL;
+    dllfuncp_libdes_ecb_encrypt=NULL;
+    dllfuncp_libdes_string_to_key=NULL;
+    dllfuncp_libdes_fixup_key_parity=NULL;
+    dllfuncp_libdes_pcbc_encrypt=NULL;
+
+    dllfuncp_crypt_dll_version=NULL;
 
     encrypt_flag = 0;
 }
@@ -3877,8 +3878,8 @@ ck_crypt_loaddll( void )
         debug(F101, "K95 Crypt LoadLibrary failed","",rc) ;
         return(0);
     } else {
-        if ((p_crypt_dll_init =
-              (p_crypt_dll_init_t)GetProcAddress( hCRYPT, "crypt_dll_init" )) == NULL )
+        if ((dllentryp_crypt_init =
+              (crypt_dll_init_dllentry *)GetProcAddress( hCRYPT, "crypt_dll_init" )) == NULL )
         {
             rc = GetLastError() ;
             debug(F111,"K95 Crypt GetProcAddress failed","crypt_dll_init",rc);
@@ -3905,7 +3906,7 @@ ck_crypt_loaddll( void )
         return(0);
     } else {
         debug(F111, "K95 Crypt LoadLibrary success",fail,rc) ;
-        if (rc = DosQueryProcAddr(hCRYPT,0,"crypt_dll_init",(PFN*)&p_crypt_dll_init))
+        if (rc = DosQueryProcAddr(hCRYPT,0,"crypt_dll_init",(PFN*)&dllentryp_crypt_init))
         {
             debug(F111,"K95 Crypt GetProcAddress failed","crypt_dll_init",rc);
             load_error = 1;
@@ -3917,30 +3918,30 @@ ck_crypt_loaddll( void )
 
     init.version = 6;
     /* Version 1 */
-    init.p_ttol = ttol;
+    init.callbackp_ttol = ttol;
 #ifndef NODEBUG
-    init.p_dodebug = dodebug;
-    init.p_dohexdump = dohexdump;
+    init.callbackp_dodebug = dodebug;
+    init.callbackp_dohexdump = dohexdump;
 #else /* NODEBUG */
-    init.p_dodebug = NULL;
-    init.p_dohexdump = NULL;
+    init.callbackp_dodebug = NULL;
+    init.callbackp_dohexdump = NULL;
 #endif /* NODEBUG */
-    init.p_tn_debug = tn_debug;
-    init.p_scrnprint = scrnprint;
+    init.callbackp_tn_debug = tn_debug;
+    init.callbackp_scrnprint = scrnprint;
     /* Version 2 */
 #ifdef KRB5
-    init.p_k5_context = &k5_context;
+    init.backdatap_k5_context = k5_context;
 #else /* KRB5 */
-    init.p_k5_context = NULL;
+    init.backdatap_k5_context = NULL;
 #endif /* KRB5 */
     /* Version 3 */
     init.callbackp_install_dllfunc = callback_install_dllfunc;
     /* Version 5 */
-    init.p_reqtelmutex = RequestTelnetMutex;
-    init.p_reltelmutex = ReleaseTelnetMutex;
+    init.callbackp_reqtelmutex = RequestTelnetMutex;
+    init.callbackp_reltelmutex = ReleaseTelnetMutex;
     /* Version 6 - adds p_encrypt_dont_support */
 
-    if (!p_crypt_dll_init) {
+    if (dllentryp_crypt_init == NULL) {
         debug(F110,"K95 Crypt initialization failed",
               "p_crypt_dll_init is NULL",0);
         ck_crypt_dll_loaddll_eh();
@@ -3948,35 +3949,35 @@ ck_crypt_loaddll( void )
     }
 
     debug(F100,"Calling p_crypt_dll_init()","",0);
-    if ( !p_crypt_dll_init(&init) ) {
+    if ( !dllentryp_crypt_init(&init) ) {
         debug(F110,"K95 Crypt initialization failed",
               "error in crypt init",0);
         ck_crypt_dll_loaddll_eh();
         return(0);
     }
 
-    if ( p_crypt_dll_init==NULL ||
-         p_encrypt_parse==NULL ||
-         p_encrypt_init==NULL ||
-         p_encrypt_session_key==NULL ||
-         p_encrypt_dont_support==NULL ||
-         p_encrypt_send_support==NULL ||
-         p_encrypt_send_request_start==NULL ||
-         p_encrypt_request_start==NULL ||
-         p_encrypt_send_request_end==NULL ||
-         p_encrypt_send_end==NULL ||
-         p_encrypt_is_encrypting==NULL ||
-         p_encrypt_is_decrypting==NULL ||
-         p_get_crypt_table==NULL ||
-         p_des_is_weak_key==NULL ||
+    if ( dllentryp_crypt_init==NULL ||
+         dllfuncp_encrypt_parse==NULL ||
+         dllfuncp_encrypt_init==NULL ||
+         dllfuncp_encrypt_session_key==NULL ||
+         dllfuncp_encrypt_dont_support==NULL ||
+         dllfuncp_encrypt_send_support==NULL ||
+         dllfuncp_encrypt_send_request_start==NULL ||
+         dllfuncp_encrypt_request_start==NULL ||
+         dllfuncp_encrypt_send_request_end==NULL ||
+         dllfuncp_encrypt_send_end==NULL ||
+         dllfuncp_encrypt_is_encrypting==NULL ||
+         dllfuncp_encrypt_is_decrypting==NULL ||
+         dllfuncp_get_crypt_table==NULL ||
+         dllfuncp_des_is_weak_key==NULL ||
 
-         libdes_random_key==NULL ||
-         libdes_random_seed==NULL ||
-         libdes_key_sched==NULL ||
-         libdes_ecb_encrypt==NULL ||
-         libdes_string_to_key==NULL ||
-         libdes_fixup_key_parity==NULL ||
-         libdes_pcbc_encrypt==NULL
+         dllfuncp_libdes_random_key==NULL ||
+         dllfuncp_libdes_random_seed==NULL ||
+         dllfuncp_libdes_key_sched==NULL ||
+         dllfuncp_libdes_ecb_encrypt==NULL ||
+         dllfuncp_libdes_string_to_key==NULL ||
+         dllfuncp_libdes_fixup_key_parity==NULL ||
+         dllfuncp_libdes_pcbc_encrypt==NULL
          /* p_crypt_dll_version is an optional function */
          )
     {

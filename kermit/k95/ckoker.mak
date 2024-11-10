@@ -1393,11 +1393,12 @@ k95crypt.dll: ck_crp.obj ck_des.obj ckclib.obj ck_crp.def ckoker.mak k95crypt.re
         bufferoverflowu.lib
 !endif
 
-nullssh.dll: ckonssh.obj ckoker.mak
 !if "$(PLATFORM)" == "NT"
+nullssh.dll: ckonssh.obj nullssh.def ckoker.mak
 	link /dll /debug /def:nullssh.def /out:$@ ckonssh.obj
 !else
 !if "$(CMP)" == "OWWCL"
+nullssh.dll: ckonssh.obj ckoker.mak
     $(CC) $(CC2) $(DEBUG) $(DLL) ckonssh.obj $(OUT)$@ \
 	    $(LINKFLAGS_DLL) $(LIBS) -"export ssh_dll_init=_ssh_dll_init"
 !endif
@@ -1407,10 +1408,16 @@ k95ssh.dll: ckolssh.obj ckolsshs.obj ckorbf.obj k95ssh.res ckoker.mak
 	link /dll /debug /def:k95ssh.def /out:$@ ckolssh.obj ckolsshs.obj \
 	    ckorbf.obj k95ssh.res $(SSH_LIB) ws2_32.lib
 
+!if "$(CMP)" == "OWWCL"
+k2crypt.dll: ck_crp.obj ck_des.obj ckclib.obj ckoker.mak
+    $(CC) $(CC2) $(DEBUG) $(DLL) ck_crp.obj ck_des.obj ckclib.obj $(OUT)$@ \
+	    $(LINKFLAGS_DLL) libdes.lib -"export crypt_dll_init=_crypt_dll_init"
+!else
 k2crypt.dll: ck_crp.obj ck_des.obj ckclib.obj k2crypt.def ckoker.mak
 	ilink /nologo /noi /exepack:1 /align:16 /base:0x10000 k2crypt.def \
             /out:$@ ck_crp.obj ck_des.obj ckclib.obj libdes.lib
         dllrname $@ CPPRMI36=CKO32RTL
+!endif
 
 docs:   ckermit.inf
 

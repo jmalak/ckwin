@@ -280,26 +280,53 @@ int decrypt_ks_hack(unsigned char *, int);
 #endif /* ENCRYPTION */
 
 #ifdef CRYPT_DLL
+
+#ifndef _WIN64
+#define CRYPT_DLL_CALLCONV  cdecl
+#endif /* _WIN64 */
+
+#ifdef CRYPT_DLL_CALLCONV
+#define CKCRYPTAPI          CRYPT_DLL_CALLCONV
+#define CKCRYPTDLLENTRY     CRYPT_DLL_CALLCONV
+#else /* CRYPT_DLL_CALLCONV */
+#define CKCRYPTAPI
+#define CKCRYPTDLLENTRY
+#endif /* CRYPT_DLL_CALLCONV */
+
+typedef int ttol_callback(char *,int);
+typedef int dodebug_callback(int,char *,char *,CK_OFF_T);
+typedef int dohexdump_callback(char *,char *,int);
+typedef void tn_debug_callback(char *);
+typedef int scrnprint_callback(const char *);
+typedef void *k5_context_backdata;
+typedef void install_dllfunc_callback(char *,void *);
+typedef unsigned long reqtelmutex_callback(unsigned long);
+typedef unsigned long reltelmutex_callback(void);
+
 typedef struct {
     int version;
 
     /* Version 1 variables */
-    int (*p_ttol)(char *,int);
-    int (*p_dodebug)(int,char *,char *,CK_OFF_T);
-    int (*p_dohexdump)(char *,char *,int);
-    void (*p_tn_debug)(char *);
-    int (*p_scrnprint)(const char *);
+    ttol_callback *callbackp_ttol;
+    dodebug_callback *callbackp_dodebug;
+    dohexdump_callback *callbackp_dohexdump;
+    tn_debug_callback *callbackp_tn_debug;
+    scrnprint_callback *callbackp_scrnprint;
 
     /* Version 2 variables */
-    void * p_k5_context;
+    k5_context_backdata backdatap_k5_context;
 
     /* Version 3 variables */
-    void (*callbackp_install_dllfunc)(char *,void *);
+    install_dllfunc_callback *callbackp_install_dllfunc;
 
     /* Version 5 variables */
-    unsigned long (*p_reqtelmutex)(unsigned long);
-    unsigned long (*p_reltelmutex)(void);
+    reqtelmutex_callback *callbackp_reqtelmutex;
+    reltelmutex_callback *callbackp_reltelmutex;
 } crypt_dll_init_data;
+
+typedef int  CKCRYPTDLLENTRY crypt_dll_init_dllentry(crypt_dll_init_data *);
+extern crypt_dll_init_dllentry crypt_dll_init;
+
 #endif /* CRYPT_DLL */
 
 /* per Kerberos v5 protocol spec */

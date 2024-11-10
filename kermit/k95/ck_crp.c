@@ -138,36 +138,36 @@ telopt(opt) int opt; {
 }
 #endif /* TELOPT_MACRO */
 
-static int (*p_ttol)(char *,int)=NULL;
-static int (*p_dodebug)(int,char *,char *,CK_OFF_T)=NULL;
-static int (*p_dohexdump)(char *,char *,int)=NULL;
-static void (*p_tn_debug)(char *)=NULL;
-static int (*p_scrnprint)(const char *)=NULL;
-static void * p_k5_context=NULL;
-static unsigned long (*p_reqtelmutex)(unsigned long)=NULL;
-static unsigned long (*p_reltelmutex)(void)=NULL;
+static ttol_callback *callbackp_ttol = NULL;
+static dodebug_callback *callbackp_dodebug = NULL;
+static dohexdump_callback *callbackp_dohexdump = NULL;
+static tn_debug_callback *callbackp_tn_debug = NULL;
+static scrnprint_callback *callbackp_scrnprint = NULL;
+static k5_context_backdata backdatap_k5_context = NULL;
+static reqtelmutex_callback *callbackp_reqtelmutex = NULL;
+static reltelmutex_callback *callbackp_reltelmutex = NULL;
 
 unsigned long
 RequestTelnetMutex(unsigned long x)
 {
-    if ( p_reqtelmutex )
-        return p_reqtelmutex(x);
+    if ( callbackp_reqtelmutex )
+        return callbackp_reqtelmutex(x);
     return 0;
 }
 
 unsigned long
 ReleaseTelnetMutex(void)
 {
-    if ( p_reltelmutex )
-        return p_reltelmutex();
+    if ( callbackp_reltelmutex )
+        return callbackp_reltelmutex();
     return 0;
 }
 
 int
 ttol(char * s, int n)
 {
-    if ( p_ttol )
-        return(p_ttol(s,n));
+    if ( callbackp_ttol )
+        return(callbackp_ttol(s,n));
     else
         return(-1);
 }
@@ -175,8 +175,8 @@ ttol(char * s, int n)
 int
 dodebug(int flag, char * s1, char * s2, CK_OFF_T n)
 {
-    if ( p_dodebug )
-        return(p_dodebug(flag,s1,s2,n));
+    if ( callbackp_dodebug )
+        return(callbackp_dodebug(flag,s1,s2,n));
     else
         return(-1);
 }
@@ -184,16 +184,16 @@ dodebug(int flag, char * s1, char * s2, CK_OFF_T n)
 int
 dohexdump( char * s1, char * s2, int n )
 {
-    if ( p_dohexdump )
-        p_dohexdump(s1,s2,n);
+    if ( callbackp_dohexdump )
+        callbackp_dohexdump(s1,s2,n);
     return(0);
 }
 
 void
 tn_debug( char * s )
 {
-    if ( p_tn_debug )
-        p_tn_debug(s);
+    if ( callbackp_tn_debug )
+        callbackp_tn_debug(s);
 }
 
 static char myprtfstr[4096];
@@ -211,8 +211,8 @@ Vscrnprintf(const char * format, ...) {
 #endif /* NT */
     va_end(ap);
 
-    if ( p_scrnprint )
-        return(p_scrnprint(myprtfstr));
+    if ( callbackp_scrnprint )
+        return(callbackp_scrnprint(myprtfstr));
     else
         return(-1);
 }
@@ -2025,7 +2025,7 @@ ecb_encrypt(stp, in, out)
     dout.enctype = ENCTYPE_UNKNOWN;
 
 #ifdef CRYPT_DLL
-    code = krb5_c_encrypt(*p_k5_context, &stp->str_key, 0, 0,
+    code = krb5_c_encrypt(backdatap_k5_context, &stp->str_key, 0, 0,
                            &din, &dout);
 #else /* CRYPT_DLL */
     code = krb5_c_encrypt(k5_context, &stp->str_key, 0, 0,
@@ -2146,7 +2146,7 @@ fb64_start(fbp, dir, server)
             d.length = sizeof(fbp->temp_feed);
 
 #ifdef CRYPT_DLL
-            if (code = krb5_c_random_make_octets(*p_k5_context,&d))
+            if (code = krb5_c_random_make_octets(backdatap_k5_context,&d))
                 return(xFAILED);
 #else /* CRYPT_DLL */
             if (code = krb5_c_random_make_octets(k5_context,&d))
@@ -5495,6 +5495,7 @@ ck_crypt_dll_version()
 }
 
 int
+CKCRYPTDLLENTRY
 crypt_dll_init( crypt_dll_init_data * init )
 {
 #ifdef LIBDES
@@ -5504,17 +5505,17 @@ crypt_dll_init( crypt_dll_init_data * init )
 #endif /* LIBDES */
 
     if ( init->version >= 1 ) {
-        p_ttol = init->p_ttol;
-        p_dodebug = init->p_dodebug;
-        p_dohexdump = init->p_dohexdump;
-        p_tn_debug = init->p_tn_debug;
-        p_scrnprint = init->p_scrnprint;
+        callbackp_ttol = init->callbackp_ttol;
+        callbackp_dodebug = init->callbackp_dodebug;
+        callbackp_dohexdump = init->callbackp_dohexdump;
+        callbackp_tn_debug = init->callbackp_tn_debug;
+        callbackp_scrnprint = init->callbackp_scrnprint;
         if ( init->version == 1 )
             return(1);
     }
     if ( init->version >= 2 ) {
         /* This is a k5_context but we don't want to include krb5.h */
-        p_k5_context = (void *) init->p_k5_context;
+        backdatap_k5_context = init->backdatap_k5_context;
         if ( init->version == 2 )
             return(1);
     }
@@ -5547,8 +5548,8 @@ crypt_dll_init( crypt_dll_init_data * init )
     }
 
     if ( init->version >= 5 ) {
-        p_reqtelmutex = init->p_reqtelmutex;
-        p_reltelmutex = init->p_reltelmutex;
+        callbackp_reqtelmutex = init->callbackp_reqtelmutex;
+        callbackp_reltelmutex = init->callbackp_reltelmutex;
         if (init->version == 5)
           return(1);
     }

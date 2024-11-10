@@ -138,36 +138,36 @@ telopt(opt) int opt; {
 }
 #endif /* TELOPT_MACRO */
 
-static int (*p_ttol)(char *,int)=NULL;
-static int (*p_dodebug)(int,char *,char *,CK_OFF_T)=NULL;
-static int (*p_dohexdump)(char *,char *,int)=NULL;
-static void (*p_tn_debug)(char *)=NULL;
-static int (*p_scrnprint)(const char *)=NULL;
-static void * p_k5_context=NULL;
-static unsigned long (*p_reqtelmutex)(unsigned long)=NULL;
-static unsigned long (*p_reltelmutex)(void)=NULL;
+static ttol_callback *callbackp_ttol = NULL;
+static dodebug_callback *callbackp_dodebug = NULL;
+static dohexdump_callback *callbackp_dohexdump = NULL;
+static tn_debug_callback *callbackp_tn_debug = NULL;
+static vscrnprintf_callback *callbackp_vscrnprintf = NULL;
+static void * p_k5_context = NULL;
+static reqtelmutex_callback *callbackp_reqtelmutex = NULL;
+static reltelmutex_callback *callbackp_reltelmutex = NULL;
 
 unsigned long
 RequestTelnetMutex(unsigned long x)
 {
-    if ( p_reqtelmutex )
-        return p_reqtelmutex(x);
+    if ( callbackp_reqtelmutex )
+        return callbackp_reqtelmutex(x);
     return 0;
 }
 
 unsigned long
 ReleaseTelnetMutex(void)
 {
-    if ( p_reltelmutex )
-        return p_reltelmutex();
+    if ( callbackp_reltelmutex )
+        return callbackp_reltelmutex();
     return 0;
 }
 
 int
 ttol(char * s, int n)
 {
-    if ( p_ttol )
-        return(p_ttol(s,n));
+    if ( callbackp_ttol )
+        return(callbackp_ttol(s,n));
     else
         return(-1);
 }
@@ -175,8 +175,8 @@ ttol(char * s, int n)
 int
 dodebug(int flag, char * s1, char * s2, CK_OFF_T n)
 {
-    if ( p_dodebug )
-        return(p_dodebug(flag,s1,s2,n));
+    if ( callbackp_dodebug )
+        return(callbackp_dodebug(flag,s1,s2,n));
     else
         return(-1);
 }
@@ -184,16 +184,16 @@ dodebug(int flag, char * s1, char * s2, CK_OFF_T n)
 int
 dohexdump( char * s1, char * s2, int n )
 {
-    if ( p_dohexdump )
-        p_dohexdump(s1,s2,n);
+    if ( callbackp_dohexdump )
+        callbackp_dohexdump(s1,s2,n);
     return(0);
 }
 
 void
 tn_debug( char * s )
 {
-    if ( p_tn_debug )
-        p_tn_debug(s);
+    if ( callbackp_tn_debug )
+        callbackp_tn_debug(s);
 }
 
 static char myprtfstr[4096];
@@ -211,8 +211,8 @@ Vscrnprintf(const char * format, ...) {
 #endif /* NT */
     va_end(ap);
 
-    if ( p_scrnprint )
-        return(p_scrnprint(myprtfstr));
+    if ( callbackp_vscrnprintf )
+        return(callbackp_vscrnprintf(myprtfstr));
     else
         return(-1);
 }
@@ -5494,8 +5494,74 @@ ck_crypt_dll_version()
     return(ckcrpv);
 }
 
-int
-crypt_dll_init( crypt_dll_init_data * init )
+#ifdef CRYPT_DLL_CALLCONV
+int CKCRYPTAPI dllfunc_encrypt_parse(unsigned char *parsedat, int end_sub) {
+    return encrypt_parse(parsedat, end_sub);
+}
+void CKCRYPTAPI dllfunc_encrypt_init(kstream iks, int type) {
+    return encrypt_init(iks, type);
+}
+int CKCRYPTAPI dllfunc_encrypt_session_key(Session_Key *key, int server) {
+    return encrypt_session_key(key, server);
+}
+void dllfunc_encrypt_send_request_start(void) {
+    return encrypt_send_request_start();
+}
+int CKCRYPTAPI dllfunc_encrypt_request_start(void) {
+    return encrypt_request_start();
+}
+void CKCRYPTAPI dllfunc_encrypt_send_request_end(void) {
+    return encrypt_send_request_end();
+}
+int CKCRYPTAPI dllfunc_encrypt_request_end(void) {
+    return encrypt_request_end();
+}
+void CKCRYPTAPI dllfunc_encrypt_send_end(void) {
+    return encrypt_send_end(void);
+}
+void CKCRYPTAPI dllfunc_encrypt_send_support(void) {
+    return encrypt_send_support();
+}
+int CKCRYPTAPI dllfunc_encrypt_is_encrypting(void) {
+    return encrypt_is_encrypting();
+}
+int CKCRYPTAPI dllfunc_encrypt_is_decrypting(void) {
+    return encrypt_is_decrypting();
+}
+int CKCRYPTAPI dllfunc_get_crypt_table( struct keytab ** pTable, int * pN ) {
+    return get_crypt_table(pTable, pN);
+}
+int CKCRYPTAPI dllfunc_ck_des_is_weak_key(Block key) {
+    return ck_des_is_weak_key(key);
+}
+static char * CKCRYPTAPI dllfunc_ck_crypt_dll_version(void) {
+    return ck_crypt_dll_version();
+}
+int CKCRYPTAPI dllfunc_encrypt_dont_support(int type) {
+    return encrypt_dont_support(type);
+}
+
+#else
+
+#define dllfunc_encrypt_parse			encrypt_parse
+#define dllfunc_encrypt_init			encrypt_init
+#define dllfunc_encrypt_session_key		encrypt_session_key
+#define dllfunc_encrypt_send_request_start	encrypt_send_request_start
+#define dllfunc_encrypt_request_start		encrypt_request_start
+#define dllfunc_encrypt_send_request_end	encrypt_send_request_end
+#define dllfunc_encrypt_request_end		encrypt_request_end
+#define dllfunc_encrypt_send_end		encrypt_send_end
+#define dllfunc_encrypt_send_support		encrypt_send_support
+#define dllfunc_encrypt_is_encrypting		encrypt_is_encrypting
+#define dllfunc_encrypt_is_decrypting		encrypt_is_decrypting
+#define dllfunc_get_crypt_table			get_crypt_table
+#define dllfunc_ck_des_is_weak_key		ck_des_is_weak_key
+#define dllfunc_ck_crypt_dll_version		ck_crypt_dll_version
+#define dllfunc_encrypt_dont_support		encrypt_dont_support
+
+#endif
+
+int CKCRYPTDLLENTRY crypt_dll_init( struct _crypt_dll_init * init )
 {
 #ifdef LIBDES
     extern int des_check_key;
@@ -5504,11 +5570,11 @@ crypt_dll_init( crypt_dll_init_data * init )
 #endif /* LIBDES */
 
     if ( init->version >= 1 ) {
-        p_ttol = init->p_ttol;
-        p_dodebug = init->p_dodebug;
-        p_dohexdump = init->p_dohexdump;
-        p_tn_debug = init->p_tn_debug;
-        p_scrnprint = init->p_scrnprint;
+        callbackp_ttol = init->callbackp_ttol;
+        callbackp_dodebug = init->callbackp_dodebug;
+        callbackp_dohexdump = init->callbackp_dohexdump;
+        callbackp_tn_debug = init->callbackp_tn_debug;
+        callbackp_vscrnprintf = init->callbackp_vscrnprintf;
         if ( init->version == 1 )
             return(1);
     }
@@ -5519,22 +5585,20 @@ crypt_dll_init( crypt_dll_init_data * init )
             return(1);
     }
     if ( init->version >= 3 ) {
-        init->callbackp_install_dllfunc("encrypt_parse",encrypt_parse);
-        init->callbackp_install_dllfunc("encrypt_init",encrypt_init);
-        init->callbackp_install_dllfunc("encrypt_session_key",encrypt_session_key);
+        init->callbackp_install_dllfunc("encrypt_parse",dllfunc_encrypt_parse);
+        init->callbackp_install_dllfunc("encrypt_init",dllfunc_encrypt_init);
+        init->callbackp_install_dllfunc("encrypt_session_key",dllfunc_encrypt_session_key);
         init->callbackp_install_dllfunc("encrypt_send_request_start",
-                              encrypt_send_request_start
-                              );
-        init->callbackp_install_dllfunc("encrypt_request_start",encrypt_request_start);
+                              dllfunc_encrypt_send_request_start);
+        init->callbackp_install_dllfunc("encrypt_request_start",dllfunc_encrypt_request_start);
         init->callbackp_install_dllfunc("encrypt_send_request_end",
-                              encrypt_send_request_end
-                              );
-        init->callbackp_install_dllfunc("encrypt_request_end",encrypt_request_end);
-        init->callbackp_install_dllfunc("encrypt_send_end",encrypt_send_end);
-        init->callbackp_install_dllfunc("encrypt_send_support",encrypt_send_support);
-        init->callbackp_install_dllfunc("encrypt_is_encrypting",encrypt_is_encrypting);
-        init->callbackp_install_dllfunc("encrypt_is_decrypting",encrypt_is_decrypting);
-        init->callbackp_install_dllfunc("get_crypt_table",get_crypt_table);
+                              dllfunc_encrypt_send_request_end);
+        init->callbackp_install_dllfunc("encrypt_request_end",dllfunc_encrypt_request_end);
+        init->callbackp_install_dllfunc("encrypt_send_end",dllfunc_encrypt_send_end);
+        init->callbackp_install_dllfunc("encrypt_send_support",dllfunc_encrypt_send_support);
+        init->callbackp_install_dllfunc("encrypt_is_encrypting",dllfunc_encrypt_is_encrypting);
+        init->callbackp_install_dllfunc("encrypt_is_decrypting",dllfunc_encrypt_is_decrypting);
+        init->callbackp_install_dllfunc("get_crypt_table",dllfunc_get_crypt_table);
         init->callbackp_install_dllfunc("des_is_weak_key",ck_des_is_weak_key);
         libdes_dll_init(init);
         if (init->version == 3)
@@ -5547,14 +5611,14 @@ crypt_dll_init( crypt_dll_init_data * init )
     }
 
     if ( init->version >= 5 ) {
-        p_reqtelmutex = init->p_reqtelmutex;
-        p_reltelmutex = init->p_reltelmutex;
+        callbackp_reqtelmutex = init->callbackp_reqtelmutex;
+        callbackp_reltelmutex = init->callbackp_reltelmutex;
         if (init->version == 5)
           return(1);
     }
 
     if ( init->version >= 6 ) {
-        init->callbackp_install_dllfunc("encrypt_dont_support",encrypt_dont_support);
+        init->callbackp_install_dllfunc("encrypt_dont_support",dllfunc_encrypt_dont_support);
         if ( init->version == 6 )
             return(1);
         /* when adding new versions; migrate the next two lines */

@@ -94,13 +94,13 @@ libdes_pcbc_encrypt(des_cblock *input, des_cblock *output, long length,
 void
 libdes_dll_init(crypt_dll_init_data * init)
 {
-    init->callbackp_install_dllfunc("libdes_random_key",libdes_random_key);
-    init->callbackp_install_dllfunc("libdes_random_seed",libdes_random_seed);
-    init->callbackp_install_dllfunc("libdes_key_sched",libdes_key_sched);
-    init->callbackp_install_dllfunc("libdes_ecb_encrypt",libdes_ecb_encrypt);
-    init->callbackp_install_dllfunc("libdes_string_to_key",libdes_string_to_key);
-    init->callbackp_install_dllfunc("libdes_fixup_key_parity",libdes_fixup_key_parity);
-    init->callbackp_install_dllfunc("libdes_pcbc_encrypt",libdes_pcbc_encrypt);
+    init->callbackp_install_dllfunc("libdes_random_key",dllfunc_libdes_random_key);
+    init->callbackp_install_dllfunc("libdes_random_seed",dllfunc_libdes_random_seed);
+    init->callbackp_install_dllfunc("libdes_key_sched",dllfunc_libdes_key_sched);
+    init->callbackp_install_dllfunc("libdes_ecb_encrypt",dllfunc_libdes_ecb_encrypt);
+    init->callbackp_install_dllfunc("libdes_string_to_key",dllfunc_libdes_string_to_key);
+    init->callbackp_install_dllfunc("libdes_fixup_key_parity",dllfunc_libdes_fixup_key_parity);
+    init->callbackp_install_dllfunc("libdes_pcbc_encrypt",dllfunc_libdes_pcbc_encrypt);
 
 }
 #endif /* CRYPT_DLL */

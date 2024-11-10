@@ -280,26 +280,61 @@ int decrypt_ks_hack(unsigned char *, int);
 #endif /* ENCRYPTION */
 
 #ifdef CRYPT_DLL
-typedef struct {
+
+#define CKCRYPTDLLENTRY	cdecl
+#define CKCRYPTAPI	cdecl
+
+/* Version 1 */
+typedef int CKCRYPTAPI ttol_callback(char *,int);
+typedef int CKCRYPTAPI dodebug_callback(int,char *,char *,CK_OFF_T);
+typedef int CKCRYPTAPI dohexdump_callback(char *,char *,int);
+typedef void CKCRYPTAPI tn_debug_callback(char *);
+typedef int CKCRYPTAPI vscrnprintf_callback(const char *, ...);
+
+/* Version 3 */
+typedef void CKCRYPTAPI install_dllfunc_callback(char *,void *);
+
+/* Version 5 */
+typedef unsigned long CKCRYPTAPI reqtelmutex_callback(unsigned long);
+typedef unsigned long CKCRYPTAPI reltelmutex_callback(void);
+
+struct _crypt_dll_init {
     int version;
 
     /* Version 1 variables */
-    int (*p_ttol)(char *,int);
-    int (*p_dodebug)(int,char *,char *,CK_OFF_T);
-    int (*p_dohexdump)(char *,char *,int);
-    void (*p_tn_debug)(char *);
-    int (*p_scrnprint)(const char *);
+    ttol_callback *callbackp_ttol;
+    dodebug_callback *callbackp_dodebug;
+    dohexdump_callback *callbackp_dohexdump;
+    tn_debug_callback *callbackp_tn_debug;
+    vscrnprintf_callback *callbackp_vscrnprintf;
 
     /* Version 2 variables */
     void * p_k5_context;
 
     /* Version 3 variables */
-    void (*callbackp_install_dllfunc)(char *,void *);
+    install_dllfunc_callback *callbackp_install_dllfunc;
 
     /* Version 5 variables */
-    unsigned long (*p_reqtelmutex)(unsigned long);
-    unsigned long (*p_reltelmutex)(void);
-} crypt_dll_init_data;
+    reqtelmutex_callback *callbackp_reqtelmutex;
+    reltelmutex_callback *callbackp_reltelmutex;
+};
+
+typedef char * CKCRYPTDLLENTRY crypt_dll_version_dllentry(void);
+
+typedef int  CKCRYPTAPI crypt_dll_init_dllentry(struct _crypt_dll_init *);
+typedef int  CKCRYPTAPI encrypt_parse_dllentry(unsigned char *, int);
+typedef void CKCRYPTAPI encrypt_init_dllentry(kstream,int);
+typedef int  CKCRYPTAPI encrypt_session_key_dllentry(Session_Key *, int);
+typedef int  CKCRYPTAPI encrypt_dont_support_dllentry(int);
+typedef void CKCRYPTAPI encrypt_send_request_start_dllentry(void);
+typedef int  CKCRYPTAPI encrypt_request_start_dllentry(void);
+typedef int  CKCRYPTAPI encrypt_send_request_end_dllentry(void);
+typedef void CKCRYPTAPI encrypt_send_end_dllentry(void);
+typedef void CKCRYPTAPI encrypt_send_support_dllentry(void);
+typedef int  CKCRYPTAPI encrypt_is_encrypting_dllentry(void);
+typedef int  CKCRYPTAPI encrypt_is_decrypting_dllentry(void);
+typedef int  CKCRYPTAPI get_crypt_table_dllentry(struct keytab ** pTable, int * pN);
+typedef int  CKCRYPTAPI des_is_weak_key_dllentry(Block);
 #endif /* CRYPT_DLL */
 
 /* per Kerberos v5 protocol spec */

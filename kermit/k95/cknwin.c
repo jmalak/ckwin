@@ -51,7 +51,7 @@ typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 typedef unsigned long DWORD_PTR, *PDWORD_PTR;
 #endif /* _WIN64 */
 #endif
-#endif /* __GCC__ */
+#endif /* __GNUC__ */
 
 #ifdef CKT_NT35_OR_31
 /* Windows NT 3.1 and 3.50 don't have ShowWindowAsync - use ShowWindow instead */

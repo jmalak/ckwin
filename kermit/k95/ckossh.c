@@ -197,7 +197,6 @@ SOCKET ssh_open_socket(char* host, char* port) {
 
 #include <stdlib.h>
 
-typedef int CKSSHDLLENTRY ssh_dll_init_dllentry(ssh_init_parameters_t *);
 static ssh_dll_init_dllentry *dllentryp_ssh_init = NULL;
 
 /* Function pointers received from the currently loaded SSH subsystem DLL */

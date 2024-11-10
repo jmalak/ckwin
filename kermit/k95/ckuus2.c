@@ -7335,7 +7335,7 @@ case XXPURGE:
 
 #ifdef SSHBUILTIN
   case XXSKRM:
-      return(hmsga(hmxxskrm));
+      return(hmsga((char **)hmxxskrm));
 #endif /* SSHBUILTIN */
 
 #ifdef ANYSSH

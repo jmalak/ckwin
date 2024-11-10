@@ -1042,6 +1042,277 @@ kstrdup(const char *str)
     return cp;
 }
 
+/* define prototypes for DLL functions */
+#ifdef _WIN64
+
+#define dllfunc_ssh_set_iparam			ssh_set_iparam
+#define dllfunc_ssh_get_iparam			ssh_get_iparam
+#define dllfunc_ssh_set_sparam			ssh_set_sparam
+#define dllfunc_ssh_get_sparam			ssh_get_sparam
+#define dllfunc_ssh_set_identity_files		ssh_set_identity_files
+#define dllfunc_ssh_get_socket			ssh_get_socket
+#define dllfunc_ssh_open
+#define dllfunc_ssh_clos
+#define dllfunc_ssh_tchk
+#define dllfunc_ssh_flui
+#define dllfunc_ssh_break
+#define dllfunc_ssh_inc
+#define dllfunc_ssh_xin
+#define dllfunc_ssh_toc
+#define dllfunc_ssh_tol
+#define dllfunc_ssh_snaws
+#define dllfunc_ssh_proto_ver
+#define dllfunc_ssh_impl_ver
+#define dllfunc_sshkey_create
+#define dllfunc_sshkey_display_fingerprint
+#define dllfunc_sshkey_display_public
+#define dllfunc_sshkey_display_public_as_ssh2
+#define dllfunc_sshkey_change_passphrase
+#define dllfunc_ssh_fwd_remote_port
+#define dllfunc_ssh_fwd_local_port
+#define dllfunc_ssh_fwd_clear_remote_ports
+#define dllfunc_ssh_fwd_clear_local_ports
+#define dllfunc_ssh_fwd_remove_remote_port
+#define dllfunc_ssh_fwd_remove_local_port
+#define dllfunc_ssh_fwd_get_ports
+#define dllfunc_sshkey_v1_change_comment
+#define dllfunc_sshkey_default_file
+#define dllfunc_ssh_v2_rekey
+#define dllfunc_ssh_agent_delete_file
+#define dllfunc_ssh_agent_delete_all
+#define dllfunc_ssh_agent_add_file
+#define dllfunc_ssh_agent_list_identities
+#define dllfunc_ssh_unload
+#define dllfunc_ssh_dll_ver
+#define dllfunc_ssh_get_keytab
+#define dllfunc_ssh_feature_supported
+#define dllfunc_ssh_get_set_help
+#define dllfunc_ssh_get_help
+
+#else /* _WIN64 */
+
+static ssh_set_iparam_dllfunc               dllfunc_ssh_set_iparam;
+static ssh_get_iparam_dllfunc               dllfunc_ssh_get_iparam;
+static ssh_set_sparam_dllfunc               dllfunc_ssh_set_sparam;
+static ssh_get_sparam_dllfunc               dllfunc_ssh_get_sparam;
+static ssh_set_identity_files_dllfunc       dllfunc_ssh_set_identity_files;
+static ssh_get_socket_dllfunc               dllfunc_ssh_get_socket;
+static ssh_open_dllfunc                     dllfunc_ssh_open;
+static ssh_clos_dllfunc                     dllfunc_ssh_clos;
+static ssh_tchk_dllfunc                     dllfunc_ssh_tchk;
+static ssh_flui_dllfunc                     dllfunc_ssh_flui;
+static ssh_break_dllfunc                    dllfunc_ssh_break;
+static ssh_inc_dllfunc                      dllfunc_ssh_inc;
+static ssh_xin_dllfunc                      dllfunc_ssh_xin;
+static ssh_toc_dllfunc                      dllfunc_ssh_toc;
+static ssh_tol_dllfunc                      dllfunc_ssh_tol;
+static ssh_snaws_dllfunc                    dllfunc_ssh_snaws;
+static ssh_proto_ver_dllfunc                dllfunc_ssh_proto_ver;
+static ssh_impl_ver_dllfunc                 dllfunc_ssh_impl_ver;
+static sshkey_create_dllfunc                dllfunc_sshkey_create;
+static sshkey_display_fingerprint_dllfunc   dllfunc_sshkey_display_fingerprint;
+static sshkey_display_public_dllfunc        dllfunc_sshkey_display_public;
+static sshkey_display_public_as_ssh2_dllfunc dllfunc_sshkey_display_public_as_ssh2;
+static sshkey_change_passphrase_dllfunc     dllfunc_sshkey_change_passphrase;
+static ssh_fwd_remote_port_dllfunc          dllfunc_ssh_fwd_remote_port;
+static ssh_fwd_local_port_dllfunc           dllfunc_ssh_fwd_local_port;
+static ssh_fwd_clear_remote_ports_dllfunc   dllfunc_ssh_fwd_clear_remote_ports;
+static ssh_fwd_clear_local_ports_dllfunc    dllfunc_ssh_fwd_clear_local_ports;
+static ssh_fwd_remove_remote_port_dllfunc   dllfunc_ssh_fwd_remove_remote_port;
+static ssh_fwd_remove_local_port_dllfunc    dllfunc_ssh_fwd_remove_local_port;
+static ssh_fwd_get_ports_dllfunc            dllfunc_ssh_fwd_get_ports;
+static sshkey_v1_change_comment_dllfunc     dllfunc_sshkey_v1_change_comment;
+static sshkey_default_file_dllfunc          dllfunc_sshkey_default_file;
+static ssh_v2_rekey_dllfunc                 dllfunc_ssh_v2_rekey;
+static ssh_agent_delete_file_dllfunc        dllfunc_ssh_agent_delete_file;
+static ssh_agent_delete_all_dllfunc         dllfunc_ssh_agent_delete_all;
+static ssh_agent_add_file_dllfunc           dllfunc_ssh_agent_add_file;
+static ssh_agent_list_identities_dllfunc    dllfunc_ssh_agent_list_identities;
+static ssh_unload_dllfunc                   dllfunc_ssh_unload;
+static ssh_dll_ver_dllfunc                  dllfunc_ssh_dll_ver;
+static ssh_get_keytab_dllfunc               dllfunc_ssh_get_keytab;
+static ssh_feature_supported_dllfunc        dllfunc_ssh_feature_supported;
+static ssh_get_set_help_dllfunc             dllfunc_ssh_get_set_help;
+static ssh_get_help_dllfunc                 dllfunc_ssh_get_help;
+
+static int CKSSHAPI dllfunc_ssh_set_iparam(int param, int value) {
+    return ssh_set_iparam(param, value);
+}
+
+static int CKSSHAPI dllfunc_ssh_get_iparam(int param) {
+    return ssh_get_iparam(param);
+}
+
+static int CKSSHAPI dllfunc_ssh_set_sparam(int param, const char* value) {
+    return ssh_set_sparam(param, value);
+}
+
+static const char* CKSSHAPI dllfunc_ssh_get_sparam(int param) {
+    return ssh_get_sparam(param);
+}
+
+static int CKSSHAPI dllfunc_ssh_set_identity_files(const char** identity_files) {
+    return ssh_set_identity_files(identity_files);
+}
+
+static int CKSSHAPI dllfunc_ssh_get_socket(void) {
+    return ssh_get_socket();
+}
+
+static int CKSSHAPI dllfunc_ssh_open(void) {
+    return ssh_open();
+}
+
+static int CKSSHAPI dllfunc_ssh_clos(void) {
+    return ssh_clos();
+}
+
+static int CKSSHAPI dllfunc_ssh_tchk(void) {
+    return ssh_tchk();
+}
+
+static int CKSSHAPI dllfunc_ssh_flui(void) {
+    return ssh_flui();
+}
+
+static int CKSSHAPI dllfunc_ssh_break(void) {
+    return ssh_break();
+}
+
+static int CKSSHAPI dllfunc_ssh_inc(int timeout) {
+    return ssh_inc(timeout);
+}
+
+static int CKSSHAPI dllfunc_ssh_xin(int count, char * buffer) {
+    return ssh_xin(count, buffer);
+}
+
+static int CKSSHAPI dllfunc_ssh_toc(int c) {
+    return ssh_toc(c);
+}
+
+static int CKSSHAPI dllfunc_ssh_tol(char * buffer, int count) {
+    return ssh_tol(buffer, count);
+}
+
+static int CKSSHAPI dllfunc_ssh_snaws(void) {
+    return ssh_snaws();
+}
+
+static const char * CKSSHAPI dllfunc_ssh_proto_ver(void) {
+    return ssh_proto_ver();
+}
+
+static const char * CKSSHAPI dllfunc_ssh_impl_ver(void) {
+    return ssh_impl_ver();
+}
+
+static int CKSSHAPI dllfunc_sshkey_create(char * filename, int bits, char * pp,
+                             int type, char * cmd_comment) {
+    return sshkey_create(filename, bits, pp, type, cmd_comment);
+}
+
+static int CKSSHAPI dllfunc_sshkey_display_fingerprint(char * filename, int babble) {
+    return sshkey_display_fingerprint(filename, babble);
+}
+
+static int CKSSHAPI dllfunc_sshkey_display_public(char * filename, char *identity_passphrase) {
+    return sshkey_display_public(filename, identity_passphrase);
+}
+
+static int CKSSHAPI dllfunc_sshkey_display_public_as_ssh2(char * filename,char *identity_passphrase) {
+    return sshkey_display_public_as_ssh2(filename, identity_passphrase);
+}
+
+static int CKSSHAPI dllfunc_sshkey_change_passphrase(char * filename, char * oldpp, char * newpp) {
+    return sshkey_change_passphrase(filename, oldpp, newpp);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_remote_port(char* address, int port, char * host, int host_port, BOOL apply) {
+    return ssh_fwd_remote_port(address, port, host, host_port, apply);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_local_port(char* address, int port,char * host, int host_port, BOOL apply) {
+    return ssh_fwd_local_port(address, port, host, host_port, apply);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_clear_remote_ports(BOOL apply) {
+    return ssh_fwd_clear_remote_ports(apply);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_clear_local_ports(BOOL apply) {
+    return ssh_fwd_clear_local_ports(apply);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_remove_remote_port(int port, BOOL apply) {
+    return ssh_fwd_remove_remote_port(port, apply);
+}
+
+static int CKSSHAPI dllfunc_ssh_fwd_remove_local_port(int port, BOOL apply) {
+    return ssh_fwd_remove_local_port(port, apply);
+}
+
+static const ssh_port_forward_t* CKSSHAPI dllfunc_ssh_fwd_get_ports(void) {
+    return ssh_fwd_get_ports();
+}
+
+#ifdef SSHTEST
+static int CKSSHAPI dllfunc_sshkey_v1_change_comment(char * filename, char * comment, char * pp) {
+    return sshkey_v1_change_comment(filename, comment, pp);
+}
+#endif /* SSHTEST */
+
+#ifdef COMMENT
+static char * CKSSHAPI dllfunc_sshkey_default_file(int a) {
+    return sshkey_default_file(a);
+}
+#endif /* COMMENT */
+
+static void CKSSHAPI dllfunc_ssh_v2_rekey(void) {
+    ssh_v2_rekey();
+}
+
+static int CKSSHAPI dllfunc_ssh_agent_delete_file(const char *filename) {
+    return ssh_agent_delete_file(filename);
+}
+
+static int CKSSHAPI dllfunc_ssh_agent_delete_all(void) {
+    return ssh_agent_delete_all();
+}
+
+static int CKSSHAPI dllfunc_ssh_agent_add_file(const char *filename) {
+    return ssh_agent_add_file(filename);
+}
+
+static int CKSSHAPI dllfunc_ssh_agent_list_identities(int do_fp) {
+    return ssh_agent_list_identities(do_fp);
+}
+
+static void CKSSHAPI dllfunc_ssh_unload(void) {
+    ssh_unload();
+}
+
+static const char * CKSSHAPI dllfunc_ssh_dll_ver(void) {
+    return ssh_dll_ver();
+}
+
+static ktab_ret CKSSHAPI dllfunc_ssh_get_keytab(int keytab_id) {
+    return ssh_get_keytab(keytab_id);
+}
+
+static int CKSSHAPI dllfunc_ssh_feature_supported(int feature_id) {
+    return ssh_feature_supported(feature_id);
+}
+
+static const char ** CKSSHAPI dllfunc_ssh_get_set_help(void) {
+    return ssh_get_set_help();
+}
+
+static const char ** CKSSHAPI dllfunc_ssh_get_help(void) {
+    return ssh_get_help();
+}
+#endif /* _WIN64 */
+
 #define ckmakmsg(buf,len,s1,s2,s3,s4) ckmakxmsg(buf, len, s1, s2, s3, s4, \
             NULL, NULL,NULL, NULL, NULL, NULL, NULL, NULL)
 

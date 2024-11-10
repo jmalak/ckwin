@@ -104,7 +104,7 @@ DEFS = p2.def
 # OpenWatcom WCL
 
 # CC parameters not ported: -q
-CC = wcl386
+CC = wcl386 -zq
 
 # CFLAGS not ported:
 #  -Gt- -Ge- -Ti+ -Tx+ -Tm+  -Sp1 -Sm -Gm -G4 -Gt -Gd
@@ -122,7 +122,7 @@ CC = wcl386
 #     -Ge-       ?          Use the version of the runtime library that assumes a DLL is being built
 CFLAGS = -D__DEBUG -DOS2 -DXYZ_DLL -bd -bt=os2 -i=.. -c
 
-LD = wcl386
+LD = wcl386 -zq
 
 #LDFLAGS not ported:
 #  /nologo /noi /exepack:1 /align:16 /base:0x10000

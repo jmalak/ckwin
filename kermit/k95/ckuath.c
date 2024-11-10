@@ -787,7 +787,15 @@ ck_crypt_is_installed()
 {
 #ifdef CK_ENCRYPTION
 #ifdef CRYPT_DLL
+#ifdef OS2
+#ifdef NT
     return(hCRYPT != NULL);
+#else /* NT */
+    return(hCRYPT != 0);
+#endif /* NT */
+#else /* OS2 */
+    return(hCRYPT != NULL);
+#endif /* OS2 */
 #else /* CRYPT_DLL */
     return(1);
 #endif /* CRYPT_DLL */

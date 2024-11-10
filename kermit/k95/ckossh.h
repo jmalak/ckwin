@@ -339,6 +339,9 @@ typedef int CKSSHAPI ssh_feature_supported_dllfunc(int feature_id);
 typedef const char** CKSSHAPI ssh_get_set_help_dllfunc(void);
 typedef const char** CKSSHAPI ssh_get_help_dllfunc(void);
 
+typedef int CKSSHDLLENTRY ssh_dll_init_dllentry(ssh_init_parameters_t *);
+ssh_dll_init_dllentry ssh_dll_init;
+
 /*
  *  k95sshg.dll     libssh + gssapi (kerberos).
  *  k95ssh.dll      libssh

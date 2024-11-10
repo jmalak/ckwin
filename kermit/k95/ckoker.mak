@@ -680,7 +680,7 @@ k95g:
 wcos2:
 	$(MAKE) -f ckoker.mak os232 \
 	    CMP="OWWCL" \
-	    CC="wcl386" \
+	    CC="wcl386 -zq" \
 !if "$(CKB_STATIC_CRT_OS2)"=="yes"
         CC2="-Fh" \
 !else
@@ -705,7 +705,7 @@ wcos2:
 wcos2d:
 	$(MAKE) -f ckoker.mak os232 \
 	    CMP="OWWCL" \
-	    CC="wcl386" \
+	    CC="wcl386 -zq" \
 !if "$(CKB_STATIC_CRT_OS2)"=="yes"
         CC2="-Fh -d3" \
 !else
@@ -1384,7 +1384,7 @@ pcfonts.dll: ckopcf.obj cko32pcf.def ckopcf.res ckoker.mak
 !endif
 
 k95crypt.dll: ck_crp.obj ck_des.obj ckclib.obj ck_crp.def ckoker.mak k95crypt.res
-	link /dll /debug /def:ck_crp.def /out:$@ ck_crp.obj ckclib.obj ck_des.obj \
+	link /nologo /dll /debug /def:ck_crp.def /out:$@ ck_crp.obj ckclib.obj ck_des.obj \
 	    libdes.lib \
 !if "$(PLATFORM)" != "OS2"
 	    k95crypt.res \
@@ -1395,7 +1395,7 @@ k95crypt.dll: ck_crp.obj ck_des.obj ckclib.obj ck_crp.def ckoker.mak k95crypt.re
 
 nullssh.dll: ckonssh.obj ckoker.mak
 !if "$(PLATFORM)" == "NT"
-	link /dll /debug /def:nullssh.def /out:$@ ckonssh.obj
+	link /nologo /dll /debug /def:nullssh.def /out:$@ ckonssh.obj
 !else
 !if "$(CMP)" == "OWWCL"
     $(CC) $(CC2) $(DEBUG) $(DLL) ckonssh.obj $(OUT)$@ \
@@ -1404,7 +1404,7 @@ nullssh.dll: ckonssh.obj ckoker.mak
 !endif
 
 k95ssh.dll: ckolssh.obj ckolsshs.obj ckorbf.obj k95ssh.res ckoker.mak
-	link /dll /debug /def:k95ssh.def /out:$@ ckolssh.obj ckolsshs.obj \
+	link /nologo /dll /debug /def:k95ssh.def /out:$@ ckolssh.obj ckolsshs.obj \
 	    ckorbf.obj k95ssh.res $(SSH_LIB) ws2_32.lib
 
 k2crypt.dll: ck_crp.obj ck_des.obj ckclib.obj k2crypt.def ckoker.mak
@@ -1426,10 +1426,10 @@ otelnet.exe: ckotel.obj ckoker.mak
 
 osetup.exe: setup.obj osetup.def ckoker.mak
 !if "$(CMP)" == "OWWCL"
-        $(CC) $(DEBUG) setup.obj $(LINKFLAGS) $(OUT)$@ \
+        $(CC) $(CC2) $(DEBUG) setup.obj $(LINKFLAGS) $(OUT)$@ \
          -"OPTION DESCRIPTION 'Kermit/2 Setup'"
 !else
-        $(CC) $(DEBUG) setup.obj osetup.def $(OUT) $@
+        $(CC) $(CC2) $(DEBUG) setup.obj osetup.def $(OUT) $@
 !endif
 
 # ckoclip.def
@@ -1455,7 +1455,7 @@ srp-tconf.exe: srp-tconf.obj getopt.obj ckosslc.obj ckoker.mak
         $(CC) $(CC2) $(DEBUG) srp-tconf.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ srp-tconf.obj getopt.obj ckosslc.obj $(LIBS)
+	link /nologo /debug /out:$@ srp-tconf.obj getopt.obj ckosslc.obj $(LIBS)
 !endif
 
 srp-passwd.exe: srp-passwd.obj getopt.obj ckosslc.obj ckoker.mak
@@ -1463,20 +1463,20 @@ srp-passwd.exe: srp-passwd.obj getopt.obj ckosslc.obj ckoker.mak
         $(CC) $(CC2) $(DEBUG) srp-passwd.obj getopt.obj ckosslc.obj ckotel.def $(OUT) $@ $(LIBS)
         dllrname $@ CPPRMI36=CKO32RTL
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ srp-passwd.obj getopt.obj ckosslc.obj $(LIBS)
+	link /nologo /debug /out:$@ srp-passwd.obj getopt.obj ckosslc.obj $(LIBS)
 !endif
 !endif
         
 iksdsvc.exe: iksdsvc.obj iksdsvc.res ckoker.mak
 !if "$(PLATFORM)" == "OS2"
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ iksdsvc.obj iksdsvc.res $(LIBS)
+	link /nologo /debug /out:$@ iksdsvc.obj iksdsvc.res $(LIBS)
 !endif
         
 iksd.exe: iksd.obj iksd.res ckoker.mak
 !if "$(PLATFORM)" == "OS2"
 !else if "$(PLATFORM)" == "NT"
-	link /debug /out:$@ iksd.obj iksd.res $(LIBS)
+	link /nologo /debug /out:$@ iksd.obj iksd.res $(LIBS)
 !endif
         
 
@@ -1806,63 +1806,63 @@ ckon30.obj: ckonov.c ckotcp.h
 
 ckoker.res: ckoker.rc k95f_os2.ico
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoker.rc
+        wrc -q -r -bt=os2 ckoker.rc
 !else
         rc -r ckoker.rc
 !endif
 
 cknker.res: cknker.rc cknker.ico
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo cknker.res cknker.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo cknker.res cknker.rc
 
 k95ssh.res: k95ssh.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95ssh.res k95ssh.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95ssh.res k95ssh.rc
 
 k95crypt.res: k95crypt.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95crypt.res k95crypt.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95crypt.res k95crypt.rc
 
 ctl3dins.res: ctl3dins.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ctl3dins.res ctl3dins.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ctl3dins.res ctl3dins.rc
 
 iksd.res: iksd.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo iksd.res iksd.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo iksd.res iksd.rc
 
 iksdsvc.res: iksdsvc.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo iksdsvc.res iksdsvc.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo iksdsvc.res iksdsvc.rc
 
 k95d.res: k95d.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95d.res k95d.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo k95d.res k95d.rc
 
 telnet.res: telnet.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo telnet.res telnet.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo telnet.res telnet.rc
 
 rlogin.res: rlogin.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo rlogin.res rlogin.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo rlogin.res rlogin.rc
 
 ssh.res: ssh.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ssh.res ssh.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ssh.res ssh.rc
 
 http.res: http.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo http.res http.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo http.res http.rc
 
 ftp.res: ftp.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ftp.res ftp.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo ftp.res ftp.rc
 
 se.res: se.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo se.res se.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo se.res se.rc
 
 textps.res: textps.rc cknver.h
-        rc $(RCDEFINES) $(RC_FEATURE_DEFS) /fo textps.res textps.rc
+        rc /nologo $(RCDEFINES) $(RC_FEATURE_DEFS) /fo textps.res textps.rc
 
 ckopcf.res: ckopcf.rc ckopcf.h
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckopcf.rc
+        wrc -q -r -bt=os2 ckopcf.rc
 !else
         rc -r ckopcf.rc
 !endif
 
 ckoclip.res: ckoclip.rc ckoclip.h ckoclip.ico
 !if "$(CMP)" == "OWWCL"
-        wrc -r -bt=os2 ckoclip.rc
+        wrc -q -r -bt=os2 ckoclip.rc
 !else
         rc -r ckoclip.rc
 !endif

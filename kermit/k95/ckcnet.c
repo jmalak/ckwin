@@ -2500,7 +2500,6 @@ tcpsocket_open(name,lcl,nett,timo) char * name; int * lcl; int nett; int timo {
     fd_set rfds;
 #else
     fd_set rfds;
-    fd_set rfds;
     struct timeval {
         long tv_sec;
         long tv_usec;

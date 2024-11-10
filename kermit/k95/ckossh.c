@@ -394,6 +394,7 @@ static int CKSSHAPI callback_debug_logging(void) {
 
 #else /* SSH_DLL_CALLCONV */
 
+/* define prototypes for callback functions */
 #define callback_ssh_get_uid                ssh_get_uid
 #define callback_ssh_get_pw                 ssh_get_pw
 #define callback_ssh_get_nodelay_enabled    ssh_get_nodelay_enabled

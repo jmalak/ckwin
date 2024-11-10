@@ -11251,7 +11251,7 @@ necessary DLLs did not load.  Use SHOW NETWORK to check network status.\n");
 		    int k;		/* Yes */
 		    k = mlook(mactab,"on_open",nmac); /* Look this up */
 		    if (k >= 0) {	              /* If found, */
-			if (dodo(k,ssh_get_sparam(SSH_SPARAM_HST),0) > -1)   /* set it up, */
+			if (dodo(k,(char*)ssh_get_sparam(SSH_SPARAM_HST),0) > -1)   /* set it up, */
 			  parser(1);		      /* and execute it */
 		    }
 		}
@@ -11554,7 +11554,7 @@ necessary DLLs did not load.  Use SHOW NETWORK to check network status.\n");
               printf("?Out range - min: 1, max: 65535\n");
               return(-9);
           }
-          ssh_hst = ssh_get_sparam(SSH_SPARAM_HST);
+          ssh_hst = (char*)ssh_get_sparam(SSH_SPARAM_HST);
 
           if ((x = cmfld("host",ssh_hst?ssh_hst:"",&s,xxstring)) < 0) {
               return(x);
@@ -12200,7 +12200,7 @@ necessary DLLs did not load.  Use SHOW NETWORK to check network status.\n");
 		    int k;		/* Yes */
 		    k = mlook(mactab,"on_open",nmac); /* Look this up */
 		    if (k >= 0) {	              /* If found, */
-			if (dodo(k,ssh_get_sparam(SSH_SPARAM_HST),0) > -1)   /* set it up, */
+			if (dodo(k,(char*)ssh_get_sparam(SSH_SPARAM_HST),0) > -1)   /* set it up, */
 			  parser(1);		      /* and execute it */
 		    }
 		}

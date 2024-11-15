@@ -64,8 +64,7 @@ p_error() U32 num;
     return;
   else
     p_error_visited = 1;
-  if (p_cfg->status_func(PS_ERROR, num, error_code,
-			 module, line, opt_arg))
+  if (p_cfg->status_func(PS_ERROR, num, error_code, module, line, opt_arg))
     user_aborted();
   longjmp(p_jmp_buf, 1);
 }

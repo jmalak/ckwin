@@ -34,6 +34,21 @@
 #ifndef _TYPEDEFS_H_
 #define _TYPEDEFS_H_
 
+
+#ifdef XYZ_DLL
+#ifndef _WIN64
+#define XYZ_DLL_CALLCONV    cdecl
+#endif
+#endif /* XYZ_DLL */
+
+#ifdef XYZ_DLL_CALLCONV
+#define CKXYZDLLENTRY       XYZ_DLL_CALLCONV
+#define CKXYZAPI            XYZ_DLL_CALLCONV
+#else
+#define CKXYZDLLENTRY
+#define CKXYZAPI
+#endif /* XYZ_DLL_CALLCONV */
+
 #ifdef NT
 #include <io.h>
 #endif

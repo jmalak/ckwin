@@ -114,7 +114,7 @@ server_connect(void)
 server_connect()
 #endif
 {
-  U32 cnt = 0;
+  unsigned long cnt = 0;
 
   do {
     if (p_cfg->status_func(PS_SERVER_WAITING, cnt++))

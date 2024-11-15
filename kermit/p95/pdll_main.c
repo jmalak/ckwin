@@ -84,7 +84,7 @@ cleanup()
 }
 
 U32
-CKDEVDLLENTRY
+CKXYZDLLENTRY
 #ifdef CK_ANSIC
 p_transfer(P_CFG *param_p_cfg) 
 #else

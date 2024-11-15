@@ -3,25 +3,23 @@
 /*        You may modify, recompile and distribute this file freely.         */
 /*****************************************************************************/
 
-#ifdef NT
-#define CKDEVDLLENTRY
-#else /* NT */
-#ifdef OS2
-#define CKDEVDLLENTRY	_System
-#else /* OS2 */
-#define CKDEVDLLENTRY
-#endif /* OS2 */
-#endif /* NT */
 
-typedef U32 CKDEVDLLENTRY p_transfer_func(P_CFG *);
 #ifdef XYZ_DLL
+
+#ifdef XYZ_DLL_CALLCONV
+#define CKXYZAPI            XYZ_DLL_CALLCONV
+#else
+#define CKXYZAPI
+#endif /* CKXYZAPI */
+
+typedef U32 CKXYZDLLENTRY p_transfer_dllentry(P_CFG *);
 #ifdef XYZ_DLL_CLIENT
-extern p_transfer_func * p_transfer;
+extern p_transfer_dllentry * p_transfer;
 #else /* XYZ_DLL_CLIENT */
-extern p_transfer_func p_transfer;
+extern p_transfer_dllentry p_transfer;
 #endif /* XYZ_DLL_CLIENT */
 #else /* XYZ_DLL */
-extern p_transfer_func p_transfer;
+extern p_transfer_dllentry p_transfer;
 #endif /* XYZ_DLL */
 extern int load_p_dll(void);
 extern int unload_p_dll(void);

@@ -50,7 +50,7 @@ extern int rpackets, spackets, spktl, rpktl, what ;
 #ifdef XYZ_DLL
 #ifdef OS2
 static HMODULE dll_handle;
-p_transfer_func *p_transfer = NULL;
+p_transfer_dllentry *p_transfer = NULL;
 #endif /* OS2 */
 
 #define PINBUFSIZE 8192
@@ -121,14 +121,14 @@ unload_p_dll(void) {
 
 
 U32
-CKDEVAPI
+CKXYZAPI
 pushback_func( U8 * buf, U32 len )
 {
     return le_puts( buf, len );
 }
 
 U32
-CKDEVAPI
+CKXYZAPI
 in_func( U8 * buf, U32 len, U32 * bytes_received )
 {
     extern int network, carrier;
@@ -177,7 +177,7 @@ in_func( U8 * buf, U32 len, U32 * bytes_received )
 }
 
 U32
-CKDEVAPI
+CKXYZAPI
 out_func( U8 * buf, U32 len, U32 * bytes_written )
 {
     int rc = 0 ;
@@ -211,7 +211,7 @@ USHORT DosDevIOCtl32(PVOID pData, USHORT cbData, PVOID pParms, USHORT cbParms,
 #endif /* OS2ONLY */
 
 U32
-CKDEVAPI
+CKXYZAPI
 break_func( U8 on )
 {
    extern int ttmdm ;
@@ -252,7 +252,7 @@ break_func( U8 on )
 }
 
 U32
-CKDEVAPI
+CKXYZAPI
 available_func( U32 * available )
 {
     int rc = ttchk() ;
@@ -320,7 +320,7 @@ pxyz(int sstate) {
     savfnc = fncact ;
 
 #ifdef XYZ_DLL
-    if ( !p_transfer )
+    if ( p_transfer == NULL )
       if ( load_p_dll() )
         return -1 ;
 #endif /* XYZ_DLL */

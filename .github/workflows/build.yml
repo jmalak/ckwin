@@ -2,9 +2,9 @@ name: Full Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ ${{vars.ACTIONBRANCH}} ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ ${{vars.ACTIONBRANCH}} ]
   workflow_dispatch:
 
 env:
@@ -235,7 +235,7 @@ jobs:
           ${{github.workspace}}\rexx\rexxre
         key: msvc-${{ matrix.toolset }}-${{ matrix.arch }}+zlib-${{env.ZLIB_VERSION}}+openssl-${{env.OPENSSL_VERSION}}+arm-openssl-${{env.OPENSSL_ARM_VERSION}}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VER}}+rexxre+ver3
     - name: Get dependencies
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true'
       run: |
         # Figure out what OPENSSL version we're using
         $openssl_version = "${{env.OPENSSL_VERSION}}"
@@ -355,7 +355,7 @@ jobs:
       shell: powershell
 
     - name: Build zlib (x86/x86-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
       shell: cmd
       run: |
         cd zlib\${{env.ZLIB_VERSION}}
@@ -363,7 +363,7 @@ jobs:
         nmake -f win32\Makefile.msc
 
     - name: Build zlib (arm32/arm64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x64_arm' || matrix.arch == 'x64_arm64')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x64_arm' || matrix.arch == 'x64_arm64')
       shell: cmd
       run: |
         cd zlib\${{env.ZLIB_VERSION}}
@@ -371,7 +371,7 @@ jobs:
         nmake
 
     - name: Build openssl (x86)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
       shell: cmd
       run: |
         set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
@@ -387,7 +387,7 @@ jobs:
         ${{env.OPENSSL_MAKE}}
 
     - name: Build openssl (x86-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
       shell: cmd
       run: |
         set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
@@ -403,7 +403,7 @@ jobs:
         ${{env.OPENSSL_MAKE}}
 
     - name: Build openssl (ARM)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm'
       shell: cmd
       run: |
         set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
@@ -414,7 +414,7 @@ jobs:
         ${{env.OPENSSL_MAKE}}
 
     - name: Build openssl (ARM-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
       shell: cmd
       run: |
         set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
@@ -424,7 +424,7 @@ jobs:
         ${{env.OPENSSL_MAKE}}
 
     - name: Build libssh (x86/x86-64, Vista+)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
       shell: cmd
       env:
         ROOT: ${{ github.workspace }}
@@ -442,7 +442,7 @@ jobs:
         call build.bat /M out /C /R /W ${{env.LIBSSH_VERSION}}
 
     - name: Build libssh (x86/x86-64, Vista+, GSSAPI)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
       shell: cmd
       env:
         ROOT: ${{ github.workspace }}
@@ -463,7 +463,7 @@ jobs:
         call build.bat /M out /N g /G /C /R /W ${{env.LIBSSH_VERSION}}
 
     - name: Build libssh (x86/x86-64, XP)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64') && (matrix.toolset == '14.0' || matrix.toolset == '14.1' || matrix.toolset == '14.2')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64') && (matrix.toolset == '14.0' || matrix.toolset == '14.1' || matrix.toolset == '14.2')
       shell: cmd
       env:
         ROOT: ${{ github.workspace }}
@@ -483,7 +483,7 @@ jobs:
         call build.bat /M out /N x /C /R /X ${{env.LIBSSH_VERSION}}    
 
     - name: Build libssh (x86/x86-64, XP, GSSAPI)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64') && (matrix.toolset == '14.0' || matrix.toolset == '14.1' || matrix.toolset == '14.2')
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64') && (matrix.toolset == '14.0' || matrix.toolset == '14.1' || matrix.toolset == '14.2')
       shell: cmd
       env:
         ROOT: ${{ github.workspace }}
@@ -506,7 +506,7 @@ jobs:
       # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
       # On ARM32 we've got to specify the list of standard libraries ourselves as for some unknown reason advapi32.lib gets left off by default.
     - name: Build libssh (arm32)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm'
       shell: powershell
       run: |
         cd libssh\${{env.LIBSSH_VERSION}}\build
@@ -515,7 +515,7 @@ jobs:
 
       # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
     - name: Build libssh (arm64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
       shell: powershell
       run: |
         cd libssh\${{env.LIBSSH_VERSION}}\build
@@ -523,7 +523,7 @@ jobs:
         nmake        
 
     - name: Build libdes
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true'
       shell: cmd
       run: |
         set PATH=%PATH%;${{github.workspace}}\tools\jom
@@ -533,7 +533,7 @@ jobs:
         call mknt.bat
 
     - name: Build Regina REXX (x86)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
       shell: cmd
       run: |
         set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
@@ -561,7 +561,7 @@ jobs:
         cd ..
 
     - name: Build Regina REXX (x86-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
+      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
       shell: cmd
       run: |
         set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
@@ -591,14 +591,14 @@ jobs:
 #    TODO: Regina REXX 3.9.6 doesn't support being cross-compiled to
 #          an incompatible target architecture:
 #
-#	.\trexx D:\a\ckwin\ckwin\rexx\regina\common\fixrc.rexx D:\a\ckwin\ckwin\rexx\regina\rexxwinexe.rc .\rexxexe.rc 3.9.6 arm64 regina "29 Apr 2024"
+#       .\trexx D:\a\ckwin\ckwin\rexx\regina\common\fixrc.rexx D:\a\ckwin\ckwin\rexx\regina\rexxwinexe.rc .\rexxexe.rc 3.9.6 arm64 regina "29 Apr 2024"
 #      NMAKE : fatal error U1045: spawn failed for '.\trexx.EXE' : 0x800700d8
 #              This version of %1 is not compatible with the version of Windows
 #              you're running. Check your computer's system information and then
 #              contact the software publisher.
 #
 #    - name: Build Regina REXX (arm64)
-#      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
+#      if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
 #      shell: cmd
 #      run: |
 #        set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
@@ -796,7 +796,7 @@ jobs:
             ${{github.workspace}}\vcredist_x86.exe
           key: platform-sdk-71-compiler+sdk+redist
       - name: Get Windows 7 Platform SDK v7.1
-        if: steps.cache-compiler.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-compiler.outputs.cache-hit != 'true'
         run: |
           wget https://ftp.zx.net.nz/pub/dev/WinSDK/win7-7.1-dn4/win7-7.1-sdk-vc.7z -outfile win7-7.1-sdk-vc.7z
           7z x win7-7.1-sdk-vc.7z
@@ -831,7 +831,7 @@ jobs:
             ${{github.workspace}}\tools
           key: platform-sdk-71-optdepts-${{ matrix.arch }}+nasm+openssl-${{env.OPENSSL_VERSION}}+libdes+v3
       - name: Get dependencies
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true'
         run: |         
           # Get and unpack openssl
           cd openssl
@@ -880,7 +880,7 @@ jobs:
         shell: powershell
 
       - name: Build openssl (ia64)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'ia64'
+        if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'ia64'
         shell: cmd
         run: |
           SET PlatformToolset=100
@@ -897,7 +897,7 @@ jobs:
           nmake
 
       - name: Build openssl (x86-64)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
+        if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
         shell: cmd
         run: |
           SET PlatformToolset=100
@@ -915,7 +915,7 @@ jobs:
           nmake
 
       - name: Build openssl (x86)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
+        if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
         shell: cmd
         run: |
           SET PlatformToolset=100
@@ -929,7 +929,7 @@ jobs:
           nmake
 
       - name: Build libdes
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-optional-dependencies.outputs.cache-hit != 'true'
         shell: cmd
         run: |
           SET PlatformToolset=100
@@ -1048,7 +1048,7 @@ jobs:
         key: openzinc1
 
     - name: Get openzinc
-      if: steps.cache-openzinc.outputs.cache-hit != 'true'
+      if: vars.NOCACHE || steps.cache-openzinc.outputs.cache-hit != 'true'
       run: |
         mkdir zinc
         cd zinc
@@ -1263,7 +1263,7 @@ jobs:
             ${{github.workspace}}\toolkit
           key: openzinc1+infozip+os2tk45
       - name: Get dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-dependencies.outputs.cache-hit != 'true'
         run: |
           mkdir zinc
           cd zinc
@@ -1436,7 +1436,7 @@ jobs:
           key: vct2003+psdk2003sp1+jom
 
       - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003
-        if: steps.cache-vct2003.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-vct2003.outputs.cache-hit != 'true'
         run: |
           wget https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z -outfile VCT2003+PSDK2003+cvtres.7z
           7z x VCT2003+PSDK2003+cvtres.7z
@@ -1471,7 +1471,7 @@ jobs:
           key: libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.0-ver2
 
       - name: Get Legacy Dependencies
-        if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
+        if: vars.NOCACHE || steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         run: |
           # Make sure everything is clean
           #Remove-Item -Recurse -Force libdes\des
@@ -1552,7 +1552,7 @@ jobs:
         shell: powershell
 
       - name: Build libdes
-        if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
+        if: vars.NOCACHE || steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         shell: cmd
         run: |
           Set PATH=%VCT2003%\bin;%PATH%
@@ -1572,7 +1572,7 @@ jobs:
           VCT2003: ${{ github.workspace }}\VCT2003
 
       - name: Build openssl
-        if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
+        if: vars.NOCACHE || steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         shell: cmd
         run: |
           Set PATH=%VCT2003%\bin;%PATH%
@@ -1596,7 +1596,7 @@ jobs:
           VCT2003: ${{ github.workspace }}\VCT2003
 
       - name: Build libsrp
-        if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
+        if: vars.NOCACHE || steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         shell: cmd
         run: |
           Set PATH=%VCT2003%\bin;%PATH%
@@ -1835,7 +1835,7 @@ jobs:
             ${{github.workspace}}\tools
           key: vct2003+psdk2003sp1+libdes+v2+jom1
       - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003 + libdes
-        if: steps.cache-vct2003.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-vct2003.outputs.cache-hit != 'true'
         run: |
           wget https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z -outfile VCT2003+PSDK2003+cvtres.7z
           7z x VCT2003+PSDK2003+cvtres.7z
@@ -1970,7 +1970,7 @@ jobs:
           key: deps-openssl-${{env.OPENSSL_VERSION}}-parallel
 
       - name: Build OpenSSL
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-dependencies.outputs.cache-hit != 'true'
         shell: bash
         env:
           CXX: /usr/bin/x86_64-w64-mingw32-c++
@@ -2061,7 +2061,7 @@ jobs:
             ${{github.workspace}}/openssl
           key: ${{ runner.os }}-ckermit${{ env.C_KERMIT_VERSION }}-r1
       - name: Get C-Kermit ${{env.C_KERMIT_VERSION}}
-        if: steps.cache-code.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-code.outputs.cache-hit != 'true'
         run: |
           wget ${{ env.C_KERMIT_CODE }} -O ckermit.tar.gz
           mkdir -p ckermit

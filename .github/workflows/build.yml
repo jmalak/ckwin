@@ -2,9 +2,9 @@ name: Full Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ ${{vars.ACTIONBRANCH}} ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ ${{vars.ACTIONBRANCH}} ]
   workflow_dispatch:
 
 env:
@@ -1209,7 +1209,7 @@ jobs:
           nocache: ${{vars.NOCACHE}}
 
       - name: Get Legacy Dependencies
-        if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
+        if: vars.NOCACHE || steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         run: |
           # Make sure everything is clean
           #Remove-Item -Recurse -Force libdes/des
@@ -1737,7 +1737,7 @@ jobs:
           key: ${{runner.os}}-C-Kermit-${{env.C_KERMIT_VERSION}}-r1
           nocache: ${{vars.NOCACHE}}
       - name: Get C-Kermit ${{env.C_KERMIT_VERSION}}
-        if: steps.cache-code.outputs.cache-hit != 'true'
+        if: vars.NOCACHE || steps.cache-code.outputs.cache-hit != 'true'
         run: |
           wget ${{env.C_KERMIT_CODE}} -O ckermit.tar.gz
           mkdir -p ckermit

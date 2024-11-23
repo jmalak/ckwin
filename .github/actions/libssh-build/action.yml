@@ -1,0 +1,123 @@
+name: libssh-build
+description: 'Build libssh'
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'id for build'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+  ver_zlib:
+    description: 'Version zlib for build'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build libssh (x86/x86-64, Vista+)
+      if: (matrix.arch == 'x86' || matrix.arch == 'x64') && inputs.id == 'Vista+'
+      env:
+        OPENSSL_ROOT_OVERRIDE: ${{github.workspace}}\openssl\${{env.OPENSSL_VERSION}}
+        ZLIB_ROOT_OVERRIDE: ${{github.workspace}}\zlib\${{env.ZLIB_VERSION}}
+      working-directory: libssh
+      run: |
+        call ..\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /C - clean build
+        REM /R - release build
+        REM /W - build for Windows Vista or newer (not XP)
+        
+        call build.bat /M out /C /R /W ${{env.LIBSSH_VERSION}}
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, Vista+, GSSAPI)
+      if: (matrix.arch == 'x86' || matrix.arch == 'x64') && inputs.id == 'Vista+GSSAPI'
+      env:
+        ROOT: ${{ github.workspace }}
+        OPENSSL_ROOT_OVERRIDE: ${{github.workspace}}\openssl\${{env.OPENSSL_VERSION}}
+        ZLIB_ROOT_OVERRIDE: ${{github.workspace}}\zlib\${{env.ZLIB_VERSION}}
+        K4W_ROOT_OVERRIDE: ${{github.workspace}}\kerberos\kfw\Kerberos
+      working-directory: libssh
+      run: |
+        call ..\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N g" produces "sshg.dll" and "sshg.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /W - build for Windows Vista or newer (not XP)
+        
+        call build.bat /M out /N g /G /C /R /W ${{env.LIBSSH_VERSION}}
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, XP)
+      if: (matrix.arch == 'x86' || matrix.arch == 'x64') && inputs.id == 'XP'
+      env:
+        ROOT: ${{ github.workspace }}
+        OPENSSL_ROOT_OVERRIDE: ${{github.workspace}}\openssl\${{env.OPENSSL_VERSION}}
+        ZLIB_ROOT_OVERRIDE: ${{github.workspace}}\zlib\${{env.ZLIB_VERSION}}
+      working-directory: libssh
+      run: |
+        call ..\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N x" produces "sshx.dll" and "sshx.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /X - build for Windows XP (removes a low impact security fix in 0.10.6, and disables thread local storage)        
+        
+        call build.bat /M out /N x /C /R /X ${{env.LIBSSH_VERSION}}    
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, XP, GSSAPI)
+      if: (matrix.arch == 'x86' || matrix.arch == 'x64') && inputs.id == 'XPGSSAPI'
+      env:
+        ROOT: ${{ github.workspace }}
+        OPENSSL_ROOT_OVERRIDE: ${{github.workspace}}\openssl\${{env.OPENSSL_VERSION}}
+        ZLIB_ROOT_OVERRIDE: ${{github.workspace}}\zlib\${{env.ZLIB_VERSION}}
+        K4W_ROOT_OVERRIDE: ${{github.workspace}}\kerberos\kfw\Kerberos
+      working-directory: libssh
+      run: |
+        call ..\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N xg" produces "sshxg.dll" and "sshxg.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /X - build for Windows XP (removes a low impact security fix in 0.10.6, and disables thread local storage)     
+        
+        call build.bat /M out /N gx /G /C /R /X ${{env.LIBSSH_VERSION}}    
+      shell: cmd
+
+      # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
+      # On ARM32 we've got to specify the list of standard libraries ourselves as for some unknown reason advapi32.lib gets left off by default.
+    - name: Build libssh (arm32)
+      if: matrix.arch == 'x64_arm'
+      working-directory: libssh\${{env.LIBSSH_VERSION}}\build
+      run: |
+        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=${{github.workspace}}\openssl\${{env.OPENSSL_ARM_VERSION}}\ -DZLIB_ROOT:PATH=${{github.workspace}}\zlib\${{env.ZLIB_VERSION}} -DWITH_DSA=ON -DCMAKE_C_STANDARD_LIBRARIES="kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib"
+        nmake
+      shell: powershell
+
+      # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
+    - name: Build libssh (arm64)
+      if: matrix.arch == 'x64_arm64'
+      working-directory: libssh\${{env.LIBSSH_VERSION}}\build
+      run: |
+        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=${{github.workspace}}\openssl\${{env.OPENSSL_ARM_VERSION}}\ -DZLIB_ROOT:PATH=${{github.workspace}}\zlib\${{env.ZLIB_VERSION}} -DWITH_DSA=ON
+        nmake        
+      shell: powershell

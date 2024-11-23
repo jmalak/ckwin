@@ -1,0 +1,38 @@
+name: libssh-get
+description: 'Download libssh'
+#
+# Expected filename: https://www.libssh.org/files/0.10/libssh-${{env.LIBSSH_VERSION}}.tar.xz
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+  url:
+    description: 'URL for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: create directory if not exists
+      run: mkdir -p libssh
+      shell: bash
+    - name: download and extract data
+      working-directory: libssh
+      run: |
+        curl -LsS -o libssh-${{ inputs.ver }}.tar.xz ${{ inputs.url }}/libssh-${{ inputs.ver }}.tar.xz
+        7z x libssh-${{ inputs.ver }}.tar.xz
+        7z x libssh-${{ inputs.ver }}.tar
+        mv libssh-${{ inputs.ver }} ${{ inputs.ver }}
+        mkdir -p ${{ inputs.ver }}/build
+        rm *.tar
+        rm *.xz
+      shell: bash       

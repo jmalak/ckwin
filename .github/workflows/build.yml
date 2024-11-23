@@ -8,16 +8,10 @@ on:
   workflow_dispatch:
 
 env:
-  # Expected filename: https://zlib.net/zlib-1.3.1.tar.gz
-  # old site: https://ftp.zx.net.nz/pub/dev/lib/zlib/
-  # As of 2023-01-21 downloads from zlib.net were coming back corrupted for an unknown reason,
-  # so we switched fetching zlib from ftp.zx.net.nz instead. As of 2024-08-16 it seems to be
-  # fine, so we've switched back to zlib.net.
   ZLIB_VERSION: 1.3.1
-  # Expected filename: https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-  OPENSSL_VERSION: 3.4.0
   # OpenSSL 3.0 and 3.1 aren't properly compatible with Windows on ARM, so we've
   # got to use 3.2 or newer for that.
+  OPENSSL_VERSION: 3.4.0
   OPENSSL_ARM_VERSION: 3.4.0
   # Make tool for openssl builds. Jom works fine with OpenSSL 1.1.1 but is broken with 3.0.10.
   # If jom works ideally we use that as it results in shorter build times.
@@ -251,75 +245,43 @@ jobs:
       id: libssh-group
       run: echo "val=${LIBSSH_VERSION%.*}" >> "$GITHUB_OUTPUT"
       shell: bash
+    - name: Get zlib
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/zlib-get"
+      with:
+        arch: ${{ matrix.arch }}
+        ver: ${{ env.ZLIB_VERSION }}
+    - name: Get openssl
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openssl-get"
+      with:
+        arch: ${{ matrix.arch }}
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        url: https://github.com/openssl/openssl/releases/download/openssl-${{ env.CK_OPENSSL_VERSION }}
+    - name: Get nasm (tools)
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/nasm-get"
+    - name: Get jom (tools)
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/jom-get"
+    - name: Get libssh
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-get"
+      with:
+        arch: ${{ matrix.arch }}
+        ver: ${{env.LIBSSH_VERSION}}
+        url: https://www.libssh.org/files/0.10
     - name: Get dependencies
       if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}
       run: |
-        # Get and unpack zlib
-        mkdir zlib
-        cd zlib
-        wget https://zlib.net/zlib-${{env.ZLIB_VERSION}}.tar.gz -outfile zlib-${{env.ZLIB_VERSION}}.tar.gz
-        7z x zlib-${{env.ZLIB_VERSION}}.tar.gz
-        7z x zlib-${{env.ZLIB_VERSION}}.tar
-        del zlib-${{env.ZLIB_VERSION}}.tar 
-        del zlib-${{env.ZLIB_VERSION}}.tar.gz
-        ren zlib-${{env.ZLIB_VERSION}} current
-        dir current
-        cd ..
-        
-        # Get and unpack openssl
-        cd openssl
-        wget "https://github.com/openssl/openssl/releases/download/openssl-${{ env.CK_OPENSSL_VERSION }}/openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz" -outfile openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar 
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        ren openssl-${{ env.CK_OPENSSL_VERSION }} current
-        dir current
-        cd ..
-        
-        # Get and unpack libssh
-        cd libssh
-        wget https://www.libssh.org/files/${{steps.libssh-group.outputs.val}}/libssh-${{env.LIBSSH_VERSION}}.tar.xz -outfile libssh-${{env.LIBSSH_VERSION}}.tar.xz
-        7z x libssh-${{env.LIBSSH_VERSION}}.tar.xz
-        7z x libssh-${{env.LIBSSH_VERSION}}.tar
-        del libssh-${{env.LIBSSH_VERSION}}.tar
-        del libssh-${{env.LIBSSH_VERSION}}.tar.xz
-        ren libssh-${{env.LIBSSH_VERSION}} current
-        cd current
-        mkdir build
-        cd ..
-        dir current
-        cd ..
-        
         # Get and unpack libdes
-        cd libdes
         wget ${{env.LIBDES}} -outfile libdes.tar.gz
         7z x libdes.tar.gz
-        7z x libdes.tar
+        7z x libdes.tar -olibdes
         del libdes.tar
         del libdes.tar.gz
-        dir
-        cd ..
-        
-        # CD into the tools directory
-        mkdir tools
-        cd tools
-        # Get and unpack nasm
-        wget https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip -outfile nasm-2.15.05-win32.zip
-        7z x nasm-2.15.05-win32.zip
-        del nasm-2.15.05-win32.zip
-        ren nasm-2.15.05 nasm
-        dir nasm
-        
-        # Get and unpack JOM
-        mkdir jom
-        wget ${{env.JOM}} -outfile jom.zip
-        7z x jom.zip -ojom
-        del jom.zip
-        dir jom
-        # CD out of the tools directory
-        cd ..          
+        dir libdes
         
         # Get KFW
         echo Get KFW...
@@ -358,120 +320,56 @@ jobs:
         dir rexxre
         # CD out of the rexx directory
         cd ..
-
-        # Install perl modules required by OpenSSL build
-        cpan -i Text::Template
       shell: powershell
 
-    - name: Build zlib (x86/x86-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
-      working-directory: zlib/current
-      run: |
-        cmake .
-        nmake -f win32\Makefile.msc
-      shell: cmd
+    - name: Build zlib
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/zlib-build"
+      with:
+        arch: ${{ matrix.arch }}
+        ver: ${{ env.ZLIB_VERSION }}
 
-    - name: Build zlib (arm32/arm64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x64_arm' || matrix.arch == 'x64_arm64')
-      working-directory: zlib/current
-      run: |
-        cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
-        nmake
-      shell: cmd
+    - name: Build openssl
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openssl-build"
+      with:
+        arch: ${{ matrix.arch }}
+        id: 'latest'
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        ver_zlib: ${{ env.ZLIB_VERSION }}
 
-    - name: Build openssl (x86)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
-      working-directory: openssl/current
-      run: |
-        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
-        echo %PATH%
-        perl Configure VC-WIN32 zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\current ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}
-        
-        REM The linker by default marks the subsystem version too high for XP
-        REM and there isn't a way to fix that from the configure script, so
-        REM do it the hard way.
-        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
-        
-        ${{env.OPENSSL_MAKE}}
-      shell: cmd
-
-    - name: Build openssl (x86-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
-      working-directory: openssl/current
-      run: |
-        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
-        echo %PATH%
-        perl Configure VC-WIN64A zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\current ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}
-        
-        REM The linker by default marks the subsystem version too high for XP
-        REM and there isn't a way to fix that from the configure script, so
-        REM do it the hard way.
-        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
-        
-        ${{env.OPENSSL_MAKE}}
-      shell: cmd
-
-    - name: Build openssl (ARM)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm'
-      working-directory: openssl/current
-      run: |
-        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
-        echo %PATH%
-        perl Configure VC-WIN32-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\current ${{env.OPENSSL_EXTRA_BUILD_FLAGS}} 
-        
-        ${{env.OPENSSL_MAKE}}
-      shell: cmd
-
-    - name: Build openssl (ARM-64)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64_arm64'
-      working-directory: openssl/current
-      run: |
-        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
-        echo %PATH%
-        perl Configure VC-WIN64-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\current ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}    
-        ${{env.OPENSSL_MAKE}}
-      shell: cmd
-
-    - name: Build libssh (x86/x86-64, Vista+)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
-      env:
-        ROOT: ${{ github.workspace }}
-      working-directory: libssh
-      run: |
-        set openssl_root_override=${{github.workspace}}\openssl\current
-        set zlib_root_override=${{github.workspace}}\zlib\current
-
-        call ${{ github.workspace }}\setenv.bat
-        
-        REM /M - output directory for binaries and libraries (Move to)
-        REM /C - clean build
-        REM /R - release build
-        REM /W - build for Windows Vista or newer (not XP)
-        
-        call build.bat /M out /C /R /W current
-      shell: cmd
-
-    - name: Build libssh (x86/x86-64, Vista+, GSSAPI)
-      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64')
-      env:
-        ROOT: ${{ github.workspace }}
-      working-directory: libssh
-      run: |
-        set openssl_root_override=${{github.workspace}}\openssl\current
-        set zlib_root_override=${{github.workspace}}\zlib\current
-        set k4w_root_override=${{github.workspace}}\${{ env.CK_K4W_PATH }}
-
-        call ${{ github.workspace }}\setenv.bat
-        
-        REM /M - output directory for binaries and libraries (Move to)
-        REM /N - Name suffix  (eg, "/N g" produces "sshg.dll" and "sshg.lib")
-        REM /G - GSSAPI build
-        REM /C - clean build
-        REM /R - release build
-        REM /W - build for Windows Vista or newer (not XP)
-        
-        call build.bat /M out /N g /G /C /R /W current
-      shell: cmd
+    - name: Build libssh
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-build"
+      with:
+        arch: ${{ matrix.arch }}
+        id: 'Vista+'
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        ver_zlib: ${{ env.ZLIB_VERSION }}
+    - name: Build libssh
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-build"
+      with:
+        arch: ${{ matrix.arch }}
+        id: 'Vista+GSSAPI'
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        ver_zlib: ${{ env.ZLIB_VERSION }}
+    - name: Build libssh
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-build"
+      with:
+        arch: ${{ matrix.arch }}
+        id: 'XP'
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        ver_zlib: ${{ env.ZLIB_VERSION }}
+    - name: Build libssh
+      if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-build"
+      with:
+        arch: ${{ matrix.arch }}
+        id: 'XPGSSAPI'
+        ver: ${{ env.CK_OPENSSL_VERSION }}
+        ver_zlib: ${{ env.ZLIB_VERSION }}
 
     - name: Build libssh (x86/x86-64, XP)
       if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && (matrix.arch == 'x86' || matrix.arch == 'x64') && (matrix.toolset == '14.0' || matrix.toolset == '14.1' || matrix.toolset == '14.2')
@@ -827,23 +725,25 @@ jobs:
             ${{github.workspace}}\libdes\Release
             ${{github.workspace}}\libdes\Debug
             ${{github.workspace}}\tools
-          key: platform-sdk-71-optdepts-${{ matrix.arch }}+nasm+openssl-${{env.CK_OPENSSL_VERSION}}+libdes+v3
+          key: platform-sdk-71-optdepts-${{ matrix.arch }}+nasm+openssl-${{env.OPENSSL_VERSION}}+libdes+v3
           nocache: ${{ vars.NOCACHE }}
+      - name: Get openssl
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+        with:
+          arch: ${{ matrix.arch }}
+          ver: ${{ env.OPENSSL_VERSION }}
+          url: https://github.com/openssl/openssl/releases/download/openssl-${{ env.OPENSSL_VERSION }}
+      - name: Get nasm (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get jom (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
       - name: Get dependencies
         if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         run: |         
-          # Get and unpack openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz -outfile openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          7z x openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          7z x openssl-${{env.CK_OPENSSL_VERSION}}.tar
-          del openssl-${{env.CK_OPENSSL_VERSION}}.tar 
-          del openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          ren openssl-${{env.CK_OPENSSL_VERSION}} current
-          dir current
-          cd ..
-          
           # Get and unpack libdes
           cd libdes
           wget ${{env.LIBDES}} -outfile libdes.tar.gz
@@ -853,80 +753,16 @@ jobs:
           del libdes.tar.gz
           dir
           cd ..
-          
-          # Get and unpack nasm
-          mkdir tools
-          cd tools
-          wget https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip -outfile nasm-2.15.05-win32.zip
-          7z x nasm-2.15.05-win32.zip
-          del nasm-2.15.05-win32.zip
-          ren nasm-2.15.05 nasm
-          dir nasm
-          cd ..          
-        
-          # Get and unpack JOM
-          cd ${{github.workspace}}\tools
-          mkdir jom
-          wget ${{env.JOM}} -outfile jom.zip
-          7z x jom.zip -ojom
-          del jom.zip
-          dir jom
-          cd ..
-          
-          # Install perl modules required by OpenSSL build
-          cpan -i Text::Template
         shell: powershell
 
-      - name: Build openssl (ia64)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'ia64'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-          set PATH=%PATH%;${{github.workspace}}\tools\jom
-
-          call ${{ github.workspace }}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          perl Configure VC-WIN64I -D"_WIN32_WINNT=0x502"
-          
-          REM The perl configure script doesn't work quite right for cross-compiling to IA64
-          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
-          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:ia64/g" makefile
-          
-          nmake
-        shell: cmd
-
-      - name: Build openssl (x86-64)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-
-          call ${{ github.workspace }}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
-          
-          perl Configure VC-WIN64A -D"_WIN32_WINNT=0x502"
-          
-          REM The perl configure script doesn't work quite right for cross-compiling to x64
-          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
-          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:x64/g" makefile
-          
-          nmake
-        shell: cmd
-
-      - name: Build openssl (x86)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-
-          call ${{ github.workspace }}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
-          
-          perl Configure VC-WIN32 -D"_WIN32_WINNT=0x502"
-          nmake
-        shell: cmd
+      - name: Build openssl
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-build"
+        with:
+          arch: ${{ matrix.arch }}
+          id: 'VS2010'
+          ver: ${{ env.OPENSSL_VERSION }}
+          ver_zlib: ${{ env.ZLIB_VERSION }}
 
       - name: Build libdes
         if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
@@ -1413,6 +1249,8 @@ jobs:
         legacy_dependencies:
           - yes
           - no
+    env:
+      CK_OPENSSL_VERSION: 1.0.1u
     steps:
       - uses: actions/checkout@v4
 
@@ -1447,16 +1285,13 @@ jobs:
           Rename-Item -Path "Microsoft Platform SDK 2003SP1" -NewName "VCT2003"
           Remove-Item VCT2003+PSDK2003+cvtres.7z
           Remove-Item VCT2003\Bin\Cvtres.exe
-          
-          # Get and unpack JOM
-          mkdir tools
-          cd tools
-          mkdir jom
-          wget ${{env.JOM}} -outfile jom.zip
-          7z x jom.zip -ojom
-          del jom.zip
-          cd ..
         shell: powershell
+      - name: Get nasm (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get jom (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
 
       - name: Cache legacy dependencies
         if: matrix.legacy_dependencies == 'yes'
@@ -1475,6 +1310,19 @@ jobs:
           key: libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.5-ver2
           nocache: ${{ vars.NOCACHE }}
 
+      - name: Get openssl
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+        with:
+          arch: x86
+          ver: ${{ env.CK_OPENSSL_VERSION }}
+          url: https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u
+      - name: Get nasm (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get jom (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
       - name: Get Legacy Dependencies
         if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         run: |
@@ -1482,20 +1330,11 @@ jobs:
           #Remove-Item -Recurse -Force libdes\des
           #Remove-Item -Recurse -Force libdes\Release
           #Remove-Item -Recurse -Force libdes\Debug
-          #Remove-Item -Recurse -Force kerberos\kfw-2.6.5
-          #Remove-Item -Recurse -Force openssl\1.0.1u
+          #Remove-Item -Recurse -Force kerberos
+          #Remove-Item -Recurse -Force openssl\${{ env.CK_OPENSSL_VERSION }}
           #Remove-Item -Recurse -Force srp-2.1.2
           #Remove-Item -Recurse -Force tools
           
-          # Get and unpack nasm
-          cd tools
-          wget https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip -outfile nasm-2.15.05-win32.zip
-          7z x nasm-2.15.05-win32.zip
-          del nasm-2.15.05-win32.zip
-          ren nasm-2.15.05 nasm
-          dir nasm
-          cd ..
-        
           # Get and unpack libdes
           cd libdes
           wget ${{env.LIBDES}} -outfile libdes.tar.gz
@@ -1515,17 +1354,6 @@ jobs:
           copy srp\* srp-2.1.2
           dir srp-2.1.2
           
-          # and openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz -outfile openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar
-          del openssl-1.0.1u.tar
-          del openssl-1.0.1u.tar.gz
-          ren openssl-1.0.1u 1.0.1u
-          dir 1.0.1u
-          cd ..
-                   
           # and kerberos for windows 2.6.0 (pre-built with Visual C++ 2003 Professional)
           cd kerberos
           wget https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip -outfile kfw-2.6-final-vc2003.zip
@@ -1556,9 +1384,6 @@ jobs:
           del slatfio.zip
           dir
           cd ..
-          
-          # Install perl modules required by OpenSSL build
-          cpan -i Text::Template
         shell: powershell
 
       - name: Build libdes
@@ -1583,27 +1408,12 @@ jobs:
 
       - name: Build openssl
         if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
-        env:
-          VCT2003: ${{ github.workspace }}\VCT2003
-        working-directory: openssl\1.0.1u
-        run: |
-          Set PATH=%VCT2003%\bin;%PATH%
-          
-          REM Don't want to pick up headers or libraries from Visual C++ 14.0
-          REM which is also on here - we only want it for cvtres.exe.
-          Set INCLUDE=%VCT2003%\include
-          Set LIB=%VCT2003%\lib;%LIB%
-          
-          set PATH=%PATH%;${{github.workspace}}\tools\nasm
-          perl Configure VC-WIN32 enable-static-engine
-                   
-          call ms\do_ms.bat
-          
-          REM adjust the makefile to statically link
-          sed -i "s/\/MD /\/MT /g" ms\ntdll.mak
-          
-          nmake -f ms\ntdll.mak
-        shell: cmd
+        uses: "./.github/actions/openssl-build"
+        with:
+          arch: x86
+          id: 'vct2003'
+          ver: ${{ env.CK_OPENSSL_VERSION }}
+          ver_zlib: ${{ env.ZLIB_VERSION }}
 
       - name: Build libsrp
         if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
@@ -1843,6 +1653,12 @@ jobs:
             ${{github.workspace}}\tools
           key: vct2003+psdk2003sp1+libdes+v2+jom1
           nocache: ${{ vars.NOCACHE }}
+      - name: Get nasm (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get jom (tools)
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
       - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003 + libdes
         if: steps.cache-vct2003.outputs.cache-hit != 'true'
         run: |
@@ -1852,15 +1668,6 @@ jobs:
           Remove-Item VCT2003+PSDK2003+cvtres.7z
           Remove-Item VCT2003\Bin\Cvtres.exe
 
-          mkdir tools
-          cd tools
-          # Get and unpack JOM
-          mkdir jom
-          wget ${{env.JOM}} -outfile jom.zip
-          7z x jom.zip -ojom
-          del jom.zip
-          cd ..
-          
           # Get and unpack libdes
           cd libdes
           wget ${{env.LIBDES}} -outfile libdes.tar.gz
@@ -2002,48 +1809,36 @@ jobs:
           key: deps-openssl-${{env.CK_OPENSSL_VERSION}}-parallel-v1
           nocache: ${{ vars.NOCACHE }}
 
-      - name: Get dependencies
+      - name: Get openssl
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir -p openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          tar zxf openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          rm openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          mv openssl-${{env.CK_OPENSSL_VERSION}} current
-          ls -l current
+        uses: "./.github/actions/openssl-get"
+        with:
+          arch: 'x64'
+          ver: ${{ env.OPENSSL_VERSION }}
+          url: https://github.com/openssl/openssl/releases/download/openssl-${{ env.OPENSSL_VERSION }}
 
-          sudo cpan -i Text::Template
-        shell: bash
-
-      - name: Build OpenSSL
+      - name: Build openssl
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        env:
-          CXX: /usr/bin/x86_64-w64-mingw32-c++
-          CC: /usr/bin/x86_64-w64-mingw32-gcc
-          RC: /usr/bin/x86_64-w64-mingw32-windres
-        working-directory: openssl/current
-        run: |
-          perl Configure mingw64
-          make depend
-          make -j 2
-        shell: bash
+        uses: "./.github/actions/openssl-build"
+        with:
+          arch: 'x64'
+          id: 'mingw'
+          ver: ${{ env.OPENSSL_VERSION }}
+          ver_zlib: ${{ env.ZLIB_VERSION }}
 
       - name: Build
         env:
           CXX: /usr/bin/x86_64-w64-mingw32-c++
           CC: /usr/bin/x86_64-w64-mingw32-gcc
+        working-directory: kermit/k95
         run: |
-          cd kermit/k95
-          make -j 2 RC=/usr/bin/x86_64-w64-mingw32-windres OPENSSL=${{ github.workspace }}/openssl/current
+          make -j 2 RC=/usr/bin/x86_64-w64-mingw32-windres OPENSSL=../../openssl/openssl-${{env.OPENSSL_VERSION}}/
         shell: bash
       - name: Make Distribution
+        working-directory: kermit/k95
         run: |
-          pushd kermit/k95
           bash ./mkdist.sh
-          popd
-          mv kermit/k95/ckwin ./
+          mv ckwin ${{github.workspace}}/
         shell: bash
 
       - name: Fetch CA Certs bundle

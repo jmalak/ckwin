@@ -1,0 +1,43 @@
+name: openssl-get
+description: 'Download openssl data'
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+  url:
+    description: 'URL for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    #
+    # Expected filename: https://github.com/openssl/openssl/releases/download/<tag>/openssl-<OPENSSL_VERSION>.tar.gz
+    #
+    - name: create directory if not exists
+      run: mkdir -p openssl
+      shell: bash
+    - name: download data
+      working-directory: openssl
+      run: |
+        pwd
+        curl -L -o openssl-${{ inputs.ver }}.tar.gz ${{ inputs.url }}/openssl-${{ inputs.ver }}.tar.gz
+        7z x openssl-${{ inputs.ver }}.tar.gz
+        7z x openssl-${{ inputs.ver }}.tar
+        mv openssl-${{ inputs.ver }} ${{ inputs.ver }}
+        rm *.tar 
+        rm *.gz
+      shell: bash       
+    - name: Install perl modules
+      run: |
+        # Install perl modules required by OpenSSL build
+        cpan -i Text::Template
+      shell: powershell

@@ -1,0 +1,36 @@
+name: zlib-build
+description: 'Build zlib for architecture and edition'
+
+inputs:
+  arch:
+    description: 'Architecture for build'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'id for build'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for build'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build zlib (${{ inputs.arch }})
+      if: inputs.arch == 'x86' || inputs.arch == 'x64'
+      working-directory: zlib\${{ inputs.ver }}
+      run: |
+        cmake .
+        nmake -f win32\Makefile.msc
+      shell: cmd
+    - name: Build zlib (${{ inputs.arch }})
+      if: inputs.arch == 'x64_arm' || inputs.arch == 'x64_arm64'
+      working-directory: zlib\${{ inputs.ver }}
+      run: |
+        cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+        nmake
+      shell: cmd

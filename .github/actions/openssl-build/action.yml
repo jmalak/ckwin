@@ -1,0 +1,154 @@
+name: openssl-build
+description: 'Build openssl for architecture and id'
+#
+# Make tool for openssl builds. Jom works fine with OpenSSL 1.1.1 but is broken with 3.0.10.
+# If jom works ideally we use that as it results in shorter build times.
+# Any extra build flags for OpenSSL. -FS is required if using Jom.
+# and -D"_WIN32_WINNT=0x502" is required for targeting Windows XP
+#
+inputs:
+  arch:
+    description: 'Architecture for build'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'id for build'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for build'
+    default: ''
+    required: false
+    type: string
+  ver_zlib:
+    description: 'Version zlib for build'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build openssl (x86)
+      if: inputs.arch == 'x86' && inputs.id == 'latest'
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{ github.workspace }}\tools\jom;${{ github.workspace }}\tools\nasm
+
+        perl Configure VC-WIN32 zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\${{ inputs.ver_zlib}} -D"_WIN32_WINNT=0x502" -FS
+
+        REM The linker by default marks the subsystem version too high for XP
+        REM and there isn't a way to fix that from the configure script, so
+        REM do it the hard way.
+        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
+        nmake
+      shell: cmd
+    - name: Build openssl (x86)
+      if: inputs.arch == 'x86' && inputs.id == 'VS2010'
+      env:
+        PlatformToolset: 100
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
+          
+        call vc10.cmd /release /xp /${{ inputs.arch }}
+        perl Configure VC-WIN32 -D"_WIN32_WINNT=0x502"
+        nmake
+      shell: cmd
+    - name: Build openssl (x64)
+      if: inputs.arch == 'x64' && inputs.id == 'latest'
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+
+        perl Configure VC-WIN64A zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\${{ inputs.ver_zlib}} -D"_WIN32_WINNT=0x502" -FS
+
+        REM The linker by default marks the subsystem version too high for XP
+        REM and there isn't a way to fix that from the configure script, so
+        REM do it the hard way.
+        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
+        nmake
+      shell: cmd
+    - name: Build openssl (x64)
+      if: inputs.arch == 'x64' && inputs.id == 'VS2010'
+      env:
+        PlatformToolset: 100
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
+          
+        call vc10.cmd /release /xp /${{ inputs.arch }}
+        perl Configure VC-WIN64A -D"_WIN32_WINNT=0x502"
+          
+        REM The perl configure script doesn't work quite right for cross-compiling to x64
+        REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+        sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:x64/g" makefile
+        nmake
+      shell: cmd
+    - name: Build openssl (arm)
+      if: inputs.arch == 'x64_arm' && inputs.id == 'latest'
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+
+        perl Configure VC-WIN32-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\${{ inputs.ver_zlib}} -D"_WIN32_WINNT=0x502" -FS
+        nmake
+      shell: cmd
+    - name: Build openssl (arm64)
+      if: inputs.arch == 'x64_arm64' && inputs.id == 'latest'
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+
+        perl Configure VC-WIN64-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib\${{ inputs.ver_zlib}} -D"_WIN32_WINNT=0x502" -FS
+        nmake
+      shell: cmd
+    - name: Build openssl (ia64)
+      if: inputs.arch == 'ia64' && inputs.id == 'VS2010'
+      env:
+        PlatformToolset: 100
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+
+        call vc10.cmd /release /xp /ia64
+        perl Configure VC-WIN64I -D"_WIN32_WINNT=0x502"
+          
+        REM The perl configure script doesn't work quite right for cross-compiling to IA64
+        REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+        sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:ia64/g" makefile
+        nmake
+      shell: cmd
+    - name: Build openssl (x64-mingw)
+      if: inputs.arch == 'x64' && inputs.id == 'mingw'
+      env:
+        CXX: /usr/bin/x86_64-w64-mingw32-c++
+        CC: /usr/bin/x86_64-w64-mingw32-gcc
+        RC: /usr/bin/x86_64-w64-mingw32-windres
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        perl Configure mingw64
+        make depend
+        make -j 2
+      shell: bash
+    - name: Build openssl (VCT2003)
+      if: inputs.arch == 'x86' && inputs.id == 'vct2003'
+      working-directory: openssl\${{ inputs.ver }}
+      run: |
+        SET PATH=${{ github.workspace }}\VCT2003\bin;%PATH%;${{github.workspace}}\tools\nasm
+          
+        REM Don't want to pick up headers or libraries from Visual C++ 14.0
+        REM which is also on here - we only want it for cvtres.exe.
+        SET INCLUDE=${{ github.workspace }}\VCT2003\include
+        SET LIB=${{ github.workspace }}\VCT2003\lib;%LIB%
+          
+        perl Configure VC-WIN32 enable-static-engine
+                   
+        call ms\do_ms.bat
+          
+        REM adjust the makefile to statically link
+        sed -i "s/\/MD /\/MT /g" ms\ntdll.mak
+          
+        nmake -f ms\ntdll.mak
+      shell: cmd

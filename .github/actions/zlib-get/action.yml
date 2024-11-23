@@ -1,0 +1,37 @@
+name: zlib-get
+description: 'Download zlib data'
+#
+# Expected filename: https://zlib.net/zlib-${{env.ZLIB_VERSION}}.tar.gz
+# now: https://zlib.net/
+# old: https://ftp.zx.net.nz/pub/dev/lib/zlib/
+# As of 2023-01-21 downloads from zlib.net were coming back corrupted for an unknown reason,
+# so we switched fetching zlib from ftp.zx.net.nz instead. As of 2024-08-16 it seems to be
+# fine, so we've switched back to zlib.net.
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: create directory if not exists
+      run: mkdir -p zlib
+      shell: bash
+    - name: download data
+      working-directory: zlib
+      run: |
+        curl -LsS -o zlib-${{ inputs.ver }}.tar.gz https://zlib.net/zlib-${{ inputs.ver }}.tar.gz
+        7z x zlib-${{ inputs.ver }}.tar.gz
+        7z x zlib-${{ inputs.ver }}.tar
+        mv zlib-${{ inputs.ver }} ${{ inputs.ver }}
+        rm *.tar
+        rm *.gz
+      shell: bash       

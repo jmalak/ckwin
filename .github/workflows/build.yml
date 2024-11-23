@@ -10,16 +10,10 @@ on:
   workflow_dispatch:
 
 env:
-  # Expected filename: https://zlib.net/zlib-1.3.1.tar.gz
-  # old site: https://ftp.zx.net.nz/pub/dev/lib/zlib/
-  # As of 2023-01-21 downloads from zlib.net were coming back corrupted for an unknown reason,
-  # so we switched fetching zlib from ftp.zx.net.nz instead. As of 2024-08-16 it seems to be
-  # fine, so we've switched back to zlib.net.
   ZLIB_VERSION: 1.3.1
-  # Expected filename: https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-  OPENSSL_VERSION: 3.4.0
   # OpenSSL 3.0 and 3.1 aren't properly compatible with Windows on ARM, so we've
   # got to use 3.2 or newer for that.
+  OPENSSL_VERSION: 3.4.0
   OPENSSL_ARM_VERSION: 3.4.0
   # Make tool for openssl builds. Jom works fine with OpenSSL 1.1.1 but is broken with 3.0.10.
   # If jom works ideally we use that as it results in shorter build times.
@@ -777,17 +771,6 @@ jobs:
         if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
         working-directory: ${{github.workspace}}
         run: |         
-          # Get and unpack openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/openssl-${{steps.cfg.outputs.openssl}}/openssl-${{steps.cfg.outputs.openssl}}.tar.gz -outfile openssl-${{steps.cfg.outputs.openssl}}.tar.gz
-          7z x openssl-${{steps.cfg.outputs.openssl}}.tar.gz
-          7z x openssl-${{steps.cfg.outputs.openssl}}.tar
-          del openssl-${{steps.cfg.outputs.openssl}}.tar 
-          del openssl-${{steps.cfg.outputs.openssl}}.tar.gz
-          ren openssl-${{steps.cfg.outputs.openssl}} current
-          dir current
-          cd ..
-          
           # Get and unpack libdes
           cd libdes
           wget ${{env.LIBDES}} -outfile libdes.tar.gz
@@ -797,61 +780,16 @@ jobs:
           del libdes.tar.gz
           dir
           cd ..
-          
-          # Install perl modules required by OpenSSL build
-          cpan -i Text::Template
         shell: powershell
 
-      - name: Build openssl (${{matrix.arch}})
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'ia64'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-          set PATH=%PATH%;${{github.workspace}}\tools\jom
-
-          call ${{github.workspace}}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          perl Configure VC-WIN64I -D"_WIN32_WINNT=0x502"
-          
-          REM The perl configure script doesn't work quite right for cross-compiling to IA64
-          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
-          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:ia64/g" makefile
-          
-          nmake
-        shell: cmd
-
-      - name: Build openssl (x86-64)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x64'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-
-          call ${{github.workspace}}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
-          
-          perl Configure VC-WIN64A -D"_WIN32_WINNT=0x502"
-          
-          REM The perl configure script doesn't work quite right for cross-compiling to x64
-          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
-          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:x64/g" makefile
-          
-          nmake
-        shell: cmd
-
-      - name: Build openssl (x86)
-        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true' && matrix.arch == 'x86'
-        working-directory: openssl\current
-        run: |
-          SET PlatformToolset=100
-
-          call ${{github.workspace}}\vc10.cmd /release /xp /${{matrix.arch}}
-          
-          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
-          
-          perl Configure VC-WIN32 -D"_WIN32_WINNT=0x502"
-          nmake
-        shell: cmd
+      - name: Build openssl
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-build"
+        with:
+          arch: ${{ matrix.arch }}
+          id: 'VS2010'
+          ver: ${{ env.OPENSSL_VERSION }}
+          ver_zlib: ${{ env.ZLIB_VERSION }}
 
       - name: Build libdes
         if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
@@ -1210,6 +1148,13 @@ jobs:
           key: vs2003-${{matrix.arch.id}}-libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.5-ver2
           nocache: ${{vars.NOCACHE}}
 
+      - name: Get openssl
+        if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+        with:
+          arch: x86
+          ver: ${{ env.CK_OPENSSL_VERSION }}
+          url: https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u
       - name: Get Legacy Dependencies
         if: steps.cache-legacy-deps.outputs.cache-hit != 'true' && matrix.legacy_dependencies == 'yes'
         run: |
@@ -1240,17 +1185,6 @@ jobs:
           copy srp\* srp-2.1.2
           dir srp-2.1.2
           
-          # and openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz -outfile openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar
-          del openssl-1.0.1u.tar
-          del openssl-1.0.1u.tar.gz
-          ren openssl-1.0.1u 1.0.1u
-          dir 1.0.1u
-          cd ..
-                   
           # and kerberos for windows 2.6.0 (pre-built with Visual C++ 2003 Professional)
           cd kerberos
           wget https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip -outfile kfw-2.6-final-vc2003.zip
@@ -1281,9 +1215,6 @@ jobs:
           del slatfio.zip
           dir
           cd ..
-          
-          # Install perl modules required by OpenSSL build
-          cpan -i Text::Template
         shell: powershell
 
       - name: Build libdes
@@ -1636,7 +1567,7 @@ jobs:
           key: mingw64-deps-openssl-${{steps.cfg.outputs.openssl}}-parallel-v1
           nocache: ${{vars.NOCACHE}}
 
-      - name: Get dependencies
+      - name: Get openssl
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
         working-directory: ${{github.workspace}}
         run: |
@@ -1651,33 +1582,29 @@ jobs:
           sudo cpan -i Text::Template
         shell: bash
 
-      - name: Build OpenSSL
+      - name: Build openssl
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        env:
-          CXX: /usr/bin/x86_64-w64-mingw32-c++
-          CC: /usr/bin/x86_64-w64-mingw32-gcc
-          RC: /usr/bin/x86_64-w64-mingw32-windres
-        working-directory: openssl/current
-        run: |
-          perl Configure mingw64
-          make depend
-          make -j 2
-        shell: bash
+        uses: "./.github/actions/openssl-build"
+        with:
+          arch: 'x64'
+          id: 'mingw'
+          ver: ${{ env.OPENSSL_VERSION }}
+          ver_zlib: ${{ env.ZLIB_VERSION }}
 
       - name: Build
         env:
           CXX: /usr/bin/x86_64-w64-mingw32-c++
           CC: /usr/bin/x86_64-w64-mingw32-gcc
+        working-directory: kermit/k95
         run: |
           cd kermit/k95
           make -j 2 RC=/usr/bin/x86_64-w64-mingw32-windres OPENSSL=${{github.workspace}}/openssl/current
         shell: bash
       - name: Make Distribution
+        working-directory: kermit/k95
         run: |
-          pushd kermit/k95
           bash ./mkdist.sh
-          popd
-          mv kermit/k95/ckwin ./
+          mv ckwin ${{github.workspace}}/
         shell: bash
 
       - name: Fetch CA Certs bundle

@@ -1,0 +1,37 @@
+name: infozip-get
+description: 'Download infozip'
+#
+# Infozip download from ftp://ftp.info-zip.org/pub/infozip/
+#   alternative site: https://ftp.zx.net.nz/pub/archive/ftp.info-zip.org/pub/infozip/
+#
+# expected filenames:
+#   ftp://ftp.info-zip.org/pub/infozip/os2/unz600.exe
+#   ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p info-zip/os2
+      shell: bash
+    - name: download unzip.zip (info-zip)
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: unzip.zip
+        remote: ftp://ftp.info-zip.org/pub/infozip/os2/unz600.exe
+    - name: download zip.zip (info-zip)
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: zip.zip
+        remote: ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip
+    - name: unpack files
+      run: |
+        7z x zip.zip -oinfo-zip
+        rm -f zip.zip
+        7z x unzip.zip -oinfo-zip/os2
+        rm -f unzip.zip
+        mv info-zip/os2/32-bit/* info-zip/os2
+      shell: bash

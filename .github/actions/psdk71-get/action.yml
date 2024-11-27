@@ -1,0 +1,44 @@
+name: psdk71-get
+description: 'Download psdk71'
+#
+# download download Microsoft Visual Studio 10.0 and Windows 7 Platform SDK v7.1
+#   from https://ftp.zx.net.nz/pub/dev/WinSDK/
+#
+# expected filenames:
+#   https://ftp.zx.net.nz/pub/dev/WinSDK/win7-7.1-dn4/win7-7.1-sdk-vc.7z
+#   https://ftp.zx.net.nz/pub/dev/WinSDK/win7-7.1-dn4/win7-7.1-sdk-psdk.7z
+#
+# download Microsoft Visual Studio 10.0 Redistributable
+#   from http://download.microsoft.com/download/
+#
+# expected filenames:
+#   http://download.microsoft.com/download/5/B/C/5BC5DBB3-652D-4DCE-B14A-475AB85EEF6E/vcredist_x86.exe
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: download Microsoft Visual Studio 10.0
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: win7-7.1-sdk-vc.7z
+        remote: https://ftp.zx.net.nz/pub/dev/WinSDK/win7-7.1-dn4/win7-7.1-sdk-vc.7z
+    - name: download Windows 7 Platform SDK v7.1
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: win7-7.1-sdk-psdk.7z
+        remote: https://ftp.zx.net.nz/pub/dev/WinSDK/win7-7.1-dn4/win7-7.1-sdk-psdk.7z
+    - name: download Microsoft Visual Studio 10.0 Redistributable
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: vcredist_x86.exe
+        remote: http://download.microsoft.com/download/5/B/C/5BC5DBB3-652D-4DCE-B14A-475AB85EEF6E/vcredist_x86.exe
+    - name: unpack all
+      run: |
+        7z x win7-7.1-sdk-vc.7z
+        7z x win7-7.1-sdk-psdk.7z
+        rm -f win7-7.1-sdk-vc.7z win7-7.1-sdk-psdk.7z
+      shell: bash

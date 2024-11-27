@@ -1,0 +1,33 @@
+name: zlib-get
+description: 'Download zlib'
+#
+# download from https://zlib.net/
+#   old site: https://ftp.zx.net.nz/pub/dev/lib/zlib/
+#   As of 2023-01-21 downloads from zlib.net were coming back corrupted for an unknown reason,
+#   so we switched fetching zlib from ftp.zx.net.nz instead. As of 2024-08-16 it seems to be
+#   fine, so we've switched back to zlib.net.
+#
+# expected filenames:
+#   https://zlib.net/zlib-${{ inputs.id }}.tar.gz
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p zlib
+      shell: bash
+    - name: download zlib
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: zlib-${{ inputs.id }}.tar.gz
+        remote: https://zlib.net/zlib-${{ inputs.id }}.tar.gz
+    - name: unpack zlib
+      run: |
+        7z x zlib-${{ inputs.id }}.tar.gz
+        7z x zlib-${{ inputs.id }}.tar -ozlib
+        rm -f zlib-${{ inputs.id }}.tar zlib-${{ inputs.id }}.tar.gz
+        mv zlib/zlib-${{ inputs.id }} zlib/current
+      shell: bash

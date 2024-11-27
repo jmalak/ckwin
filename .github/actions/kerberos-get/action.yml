@@ -1,0 +1,59 @@
+name: kerberos-get
+description: 'Download kerberos'
+#
+# Current Kerberos for Windows (4.1) download from https://web.mit.edu/kerberos/dist/kfw/
+#
+# expected files for current release for modern builds
+#   https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-i386.msi
+#   https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-amd64.msi
+#
+# Legacy Kerberos for Windows (2.6) download from https://ftp.zx.net.nz/pub/dev/lib/kfw/
+#
+# expected files for legacy release
+#   https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p kerberos
+      shell: bash
+    - name: download kerberos (legacy 2.6)
+      if: inputs.id == 'legacy'
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: kfw-2.6-final-vc2003.zip
+        remote: https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip
+    - name: unpack kerberos (legacy 2.6)
+      if: inputs.id == 'legacy'
+      run: |
+        7z x kfw-2.6-final-vc2003.zip -okerberos
+        rm -f kfw-2.6-final-vc2003.zip
+        mv kerberos/kfw-2.6-final kerberos/legacy
+      shell: bash
+    - name: download kerberos (x86)
+      if: inputs.id == 'x86'
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: kfw.msi
+        remote: https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-i386.msi
+    - name: download kerberos (x64)
+      if: inputs.id == 'x64'
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: kfw.msi
+        remote: https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-amd64.msi
+    - run: mkdir -p kerberos/current
+      if: inputs.id == 'x86' || inputs.id == 'x64'
+      shell: bash
+    - name: Install kerberos
+      if: inputs.id == 'x86' || inputs.id == 'x64'
+      run: |
+        start-process msiexec -argumentlist "/a kfw.msi /qn TARGETDIR=${{github.workspace}}\kerberos\current" -wait
+        del kfw.msi
+        dir kerberos\current
+      shell: powershell
+        

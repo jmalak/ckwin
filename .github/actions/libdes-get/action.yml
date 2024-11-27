@@ -1,0 +1,30 @@
+name: libdes-get
+description: 'Download libdes'
+#
+# it is used for building k95crypt.dll
+#
+# download from https://www.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/libraries/libdes/
+#
+# expected files
+#   https://www.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/libraries/libdes/libdes.tar.gz
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p libdes
+      shell: bash
+    - name: download libdes
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: libdes.tar.gz
+        remote: https://www.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/libraries/libdes/libdes.tar.gz
+    - name: unpack libdes
+      run: |
+        7z x libdes.tar.gz
+        7z x libdes.tar -olibdes
+        rm -f libdes.tar libdes.tar.gz
+      shell: bash

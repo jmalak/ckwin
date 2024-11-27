@@ -1,0 +1,29 @@
+name: nasm-get
+description: 'Download nasm'
+#
+# download from https://www.nasm.us/pub/nasm/releasebuilds/
+#
+# expected filenames:
+#   https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p tools
+      shell: bash
+    - name: download nasm
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: nasm-2.15.05-win32.zip
+        remote: https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+    - name: unpack nasm
+      run: |
+        7z x nasm-2.15.05-win32.zip -otools
+        rm -f nasm-2.15.05-win32.zip
+        mv tools/nasm-2.15.05 tools/nasm
+        ls -l tools/nasm
+      shell: bash

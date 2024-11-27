@@ -1,0 +1,33 @@
+name: vct2003-get
+description: 'Download vct2003'
+#
+# download Visual C++ 2003 Toolkit + Platform SDK 2003
+#   from https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/
+#
+# expected filenames:
+#   https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: download Visual C++ 2003 Toolkit + Platform SDK 2003
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: xvct2003.7z
+        remote: https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+    #
+    # Unpack Visual C++ 2003 Toolkit + Platform SDK 2003 and remove cvtres.exe
+    # from Visual C++ 2003 Toolkit so we can use cvtres.exe from 
+    # current Visual C++ which is further on the PATH
+    #
+    - name: unpack Visual C++ 2003 Toolkit + Platform SDK 2003
+      run: |
+        7z x xvct2003.7z
+        rm -f xvct2003.7z
+        mv "Microsoft Platform SDK 2003SP1" VCT2003
+        rm -f VCT2003/Bin/Cvtres.exe
+      shell: bash

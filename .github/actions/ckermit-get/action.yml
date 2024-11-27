@@ -1,0 +1,29 @@
+name: ckermit-get
+description: 'Download ckermit'
+#
+# download from https://kermitproject.org/ftp/kermit/pretest/
+#
+# expected filenames:
+#   https://kermitproject.org/ftp/kermit/pretest/x.tar.gz
+#   ${{ inputs.id }}
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p ckermit
+      shell: bash
+    - name: download ckermit
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: ckermit.tar.gz
+        remote: ${{ inputs.id }}
+    - name: unpack file
+      working-directory: ckermit
+      run: |
+        tar -zxvf ../ckermit.tar.gz
+        rm -f ../ckermit.tar.gz
+      shell: bash

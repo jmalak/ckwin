@@ -1,0 +1,32 @@
+name: os2tk45-get
+description: 'Download os2tk45'
+#
+# download from https://88watts.net/
+#   OS/2 Developer's Toolkit v4.5 is available on David Azarewicz's 88watts.net
+#   *supposedly* with permission from IBM - or so Arca Noae (which David is
+#   involved with) claims on this page:
+#     https://www.arcanoae.com/wiki/information-for-developers/
+#   It is needed only for building the IBM TCP/IP 2.0 TCP/IP backend. The SDK
+#   for this is also available on the OS/2 Warp 4 CD.
+#
+# expected filenames:
+#   https://88watts.net/dlfile.php?F=Os2Tk45-
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: download os2tk45
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: os2tk45.zip
+        remote: https://88watts.net/dlfile.php?F=Os2Tk45-
+    - name: unpack openzinc
+      run: |
+        7z x os2tk45.zip
+        rm -f os2tk45.zip
+        mv toolkit/os2tk45/h toolkit/os2tk45/include
+      shell: bash

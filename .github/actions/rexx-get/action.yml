@@ -1,0 +1,45 @@
+name: rexx-get
+description: 'Download rexx'
+#
+# download Regina from https://ftp.zx.net.nz/pub/dev/rexx/regina/
+#   Grab it from ftp.zx.net.nz as its normally distributed via sourceforge
+#   with its annoying interstitial advertising page
+#
+# expected filenames:
+#   https://ftp.zx.net.nz/pub/dev/rexx/regina/3.9.6/regina396.zip
+#
+# download Regular expressions for Regina
+#   from http://home.interlog.com/~ptjm/
+# Should the original ever go down (its not been updated in over 20 years),
+# a mirror is here:
+#   https://ftp.zx.net.nz/pub/dev/rexx/ptjm/
+#
+# expected filenames:
+#   http://home.interlog.com/~ptjm/rexxre101.zip
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p rexx/regina
+      shell: bash
+    - name: download rexx
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: regina.zip
+        remote: https://ftp.zx.net.nz/pub/dev/rexx/regina/3.9.6/regina396.zip
+    - name: download rexxre
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: rexxre.zip
+        remote: http://home.interlog.com/~ptjm/rexxre101.zip
+    - name: unpack rexx
+      run: |
+        7z x regina.zip -orexx/regina
+        rm -f regina.zip
+        7z x rexxre.zip -orexx
+        rm -f rexxre.zip
+      shell: bash

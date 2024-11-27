@@ -1,0 +1,57 @@
+name: openssl-get
+description: 'Download openssl'
+#
+# download from https://github.com/openssl/openssl/releases/download/
+#
+# expected filenames current version
+#   https://github.com/openssl/openssl/releases/download/openssl-${{ inputs.id }}/openssl-${{ inputs.id }}.tar.gz
+#
+# expected filenames legacy version
+#   https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz
+#
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p openssl
+      shell: bash
+    - name: download openssl (legacy)
+      if: inputs.id == 'legacy'
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: openssl-1.0.1u.tar.gz
+        remote: https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz
+    - name: unpack openssl (legacy)
+      if: inputs.id == 'legacy'
+      run: |
+        7z x openssl-1.0.1u.tar.gz
+        7z x openssl-1.0.1u.tar -oopenssl
+        rm -f openssl-1.0.1u.tar openssl-1.0.1u.tar.gz
+        mv openssl/openssl-1.0.1u openssl/legacy
+      shell: bash
+    - name: download openssl
+      if: inputs.id != 'legacy'
+      uses: "./.github/actions/curl-cmd"
+      with:
+        local: openssl-${{ inputs.id }}.tar.gz
+        remote: https://github.com/openssl/openssl/releases/download/openssl-${{ inputs.id }}/openssl-${{ inputs.id }}.tar.gz
+    - name: unpack openssl
+      if: inputs.id != 'legacy'
+      run: |
+        7z x openssl-${{ inputs.id }}.tar.gz
+        7z x openssl-${{ inputs.id }}.tar -oopenssl
+        rm -f openssl-${{ inputs.id }}.tar openssl-${{ inputs.id }}.tar.gz
+        mv openssl/openssl-${{ inputs.id }} openssl/current
+      shell: bash
+    - name: Install perl module required by OpenSSL build
+      run: |
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          cpan -i Text::Template
+        else
+          sudo cpan -i Text::Template
+        fi
+      shell: bash
+

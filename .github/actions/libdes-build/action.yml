@@ -1,0 +1,59 @@
+name: libdes-build
+description: 'Build libdes'
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Build libdes
+        if: inputs.id == 'psdk71'
+        working-directory: libdes
+        run: |
+          SET PlatformToolset=100
+
+          call vc10.cmd /release /xp /${{inputs.arch}}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+          
+          call mknt.bat
+        shell: cmd
+
+      - name: Build libdes
+        if: inputs.id == 'legacy'
+        env:
+          VCT2003: ${{ github.workspace }}\VCT2003
+        working-directory: libdes
+        run: |
+          Set PATH=%VCT2003%\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          Set INCLUDE=%VCT2003%\include
+          Set LIB=%VCT2003%\lib
+          set CKB_STATIC_CRT_NT=yes
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+          
+          call mknt.bat
+        shell: cmd
+
+      - name: Build libdes
+        if: inputs.id == 'latest'
+        working-directory: libdes
+        run: |
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+        
+          call mknt.bat
+        shell: cmd

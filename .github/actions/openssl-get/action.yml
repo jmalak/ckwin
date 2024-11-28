@@ -1,0 +1,57 @@
+name: openssl-get
+description: 'Download openssl'
+inputs:
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Test perl
+        run: |
+          perl
+          cpan
+        shell: bash
+      - run: mkdir -p openssl
+        shell: bash
+      - name: Get and unpack openssl (legacy)
+        if: inputs.id == 'legacy'
+        working-directory: openssl
+        run: |
+          curl ${{ env.CK_CURL }} -L -o openssl-1.0.1u.tar.gz https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz
+          7z x openssl-1.0.1u.tar.gz
+          7z x openssl-1.0.1u.tar
+          rm -f openssl-1.0.1u.tar openssl-1.0.1u.tar.gz
+          mv openssl-1.0.1u 1.0.1u
+        shell: bash
+      - name: Get and unpack openssl
+        if: inputs.id == 'arm'
+        working-directory: openssl
+        run: |
+          curl ${{ env.CK_CURL }} -L -o openssl-${{env.OPENSSL_ARM_VERSION}}.tar.gz https://github.com/openssl/openssl/releases/download/openssl-${{env.OPENSSL_ARM_VERSION}}/openssl-${{env.OPENSSL_ARM_VERSION}}.tar.gz
+          7z x openssl-${{env.OPENSSL_ARM_VERSION}}.tar.gz
+          7z x openssl-${{env.OPENSSL_ARM_VERSION}}.tar
+          rm -f openssl-${{env.OPENSSL_ARM_VERSION}}.tar openssl-${{env.OPENSSL_ARM_VERSION}}.tar.gz
+          mv openssl-${{env.OPENSSL_ARM_VERSION}} ${{env.OPENSSL_ARM_VERSION}}
+        shell: bash
+      - name: Get and unpack openssl
+        if: inputs.id != 'legacy' && inputs.id != 'arm'
+        working-directory: openssl
+        run: |
+          curl ${{ env.CK_CURL }} -L -o openssl-${{env.OPENSSL_VERSION}}.tar.gz https://github.com/openssl/openssl/releases/download/openssl-${{env.OPENSSL_VERSION}}/openssl-${{env.OPENSSL_VERSION}}.tar.gz
+          7z x openssl-${{env.OPENSSL_VERSION}}.tar.gz
+          7z x openssl-${{env.OPENSSL_VERSION}}.tar
+          rm -f openssl-${{env.OPENSSL_VERSION}}.tar openssl-${{env.OPENSSL_VERSION}}.tar.gz
+          mv openssl-${{env.OPENSSL_VERSION}} ${{env.OPENSSL_VERSION}}
+        shell: bash
+      - name: Install perl modules required by OpenSSL build
+        run: |
+          perl cpan -i Text::Template
+        shell: bash
+      - name: Test perl
+        run: |
+          perl
+          cpan
+        shell: bash

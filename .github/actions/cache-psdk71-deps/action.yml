@@ -1,0 +1,92 @@
+name: cache-psdk71-deps
+description: Handle Dependencies Cache psdk71
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Cache Optional Dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\zlib 
+            ${{github.workspace}}\openssl\${{env.OPENSSL_VERSION}}
+            ${{github.workspace}}\libssh
+            ${{github.workspace}}\libdes\des
+            ${{github.workspace}}\libdes\Release
+            ${{github.workspace}}\libdes\Debug
+            ${{github.workspace}}\tools
+          key: platform-sdk-71-optdepts-${{ inputs.arch }}+nasm+openssl-${{env.OPENSSL_VERSION}}+libdes+v3
+      - name: Get and unpack nasm
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get and unpack jom
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
+      - name: Get and unpack libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-get"
+      - name: Get and unpack openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+
+      - name: Build openssl (ia64)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'ia64'
+        run: |
+          SET PlatformToolset=100
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          call vc10.cmd /release /xp /${{inputs.arch}}
+          
+          cd openssl\${{env.OPENSSL_VERSION}}
+          perl Configure VC-WIN64I -D"_WIN32_WINNT=0x502"
+          
+          REM The perl configure script doesn't work quite right for cross-compiling to IA64
+          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:ia64/g" makefile
+          
+          nmake
+        shell: cmd
+
+      - name: Build openssl (x86-64)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'x64'
+        run: |
+          SET PlatformToolset=100
+          call vc10.cmd /release /xp /${{inputs.arch}}
+          
+          cd openssl\${{env.OPENSSL_VERSION}}
+          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
+          
+          perl Configure VC-WIN64A -D"_WIN32_WINNT=0x502"
+          
+          REM The perl configure script doesn't work quite right for cross-compiling to x64
+          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:x64/g" makefile
+          
+          nmake
+        shell: cmd
+
+      - name: Build openssl (x86)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'x86'
+        run: |
+          SET PlatformToolset=100
+          call vc10.cmd /release /xp /${{inputs.arch}}
+          
+          cd openssl\${{env.OPENSSL_VERSION}}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\nasm;${{github.workspace}}\tools\jom
+          
+          perl Configure VC-WIN32 -D"_WIN32_WINNT=0x502"
+          nmake
+        shell: cmd
+
+      - name: Build libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-build"
+        with:
+          arch: ${{inputs.arch}}
+          id: 'psdk71'

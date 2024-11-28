@@ -1,0 +1,24 @@
+name: cache-openzinc-deps
+description: Handle Dependencies Cache openzinc
+runs:
+  using: composite
+  steps:
+      - name: Cache Dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\zinc
+          key: openzinc1
+
+      - run: mkdir -p zinc
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: bash
+      - name: Get Open zinc
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: zinc
+        run: |
+          curl ${{ env.CK_CURL }} -o OZ1.zip ${{ env.OPENZINC }}
+          7z x OZ1.zip
+          rm -f OZ1.zip
+        shell: bash

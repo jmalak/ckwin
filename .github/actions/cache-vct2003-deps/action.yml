@@ -1,0 +1,21 @@
+name: cache-vct2003-deps
+description: Handle Dependencies Cache vct2003
+runs:
+  using: composite
+  steps:
+      - name: Cache VCT2003
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\vct2003
+            ${{github.workspace}}\tools\jom
+          key: vct2003+psdk2003sp1+jom
+
+      - name: Get VCT2003
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/vct2003-get"
+      - name: Get and unpack jom
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
+

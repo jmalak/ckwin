@@ -1,0 +1,50 @@
+name: cache-os2-deps
+description: Handle Dependencies Cache os2
+runs:
+  using: composite
+  steps:
+      - name: Cache Dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\zinc
+            ${{github.workspace}}\info-zip
+            ${{github.workspace}}\toolkit
+          key: openzinc1+infozip+os2tk45
+
+      - run: mkdir -p zinc
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: bash
+      - name: Get Open zinc
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: zinc
+        run: |
+          curl ${{ env.CK_CURL }} -o OZ1.zip ${{ env.OPENZINC }}
+          7z x OZ1.zip
+          rm -f OZ1.zip
+        shell: bash
+      - run: mkdir -p info-zip/os2
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: bash
+      - name: Get info-zip
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: info-zip
+        run: |
+          curl ${{ env.CK_CURL }} -o zip.zip ${{ env.INFOZIP_FTP }}win32/zip300xn.zip
+          7z x zip.zip
+          curl ${{ env.CK_CURL }} -o unzip.zip ${{ env.INFOZIP_FTP }}os2/unz600.exe
+          7z x unzip.zip -oos2
+          rm -f zip.zip unzip.zip
+          mv os2/32-bit/* os2
+          ls -la
+        shell: bash
+      - name: Get OS/2 toolkit
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          curl ${{ env.CK_CURL }} -o os2tk45.zip ${{ env.OS2TK45 }}
+          7z x os2tk45.zip
+          rm -f os2tk45.zip
+          mv toolkit/os2tk45/h toolkit/os2tk45/include
+          ls -la toolkit/os2tk45
+        shell: bash

@@ -1,0 +1,129 @@
+name: cache-vct2003-legacy-deps
+description: Handle Dependencies Cache vct2003-legacy
+runs:
+  using: composite
+  steps:
+      - name: Cache legacy dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\srp-2.1.2
+            ${{github.workspace}}\openssl\1.0.1u
+            ${{github.workspace}}\kerberos\kfw-2.6-final
+            ${{github.workspace}}\libdes\des
+            ${{github.workspace}}\libdes\Release
+            ${{github.workspace}}\libdes\Debug
+            ${{github.workspace}}\superlat
+            ${{github.workspace}}\tools
+          key: libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.0-ver2
+
+      - name: Get and unpack nasm
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get and unpack libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-get"
+      - name: Get and extract libsrp
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          curl ${{ env.CK_CURL }} -o srp-2.1.2.tar.gz http://srp.stanford.edu/source/srp-2.1.2.tar.gz
+          7z x srp-2.1.2.tar.gz
+          7z x srp-2.1.2.tar
+          rm srp-2.1.2.tar srp-2.1.2.tar.gz
+          cp srp/* srp-2.1.2
+        shell: bash
+      - name: Get and unpack openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+        with:
+          id: 'legacy'
+      - run: mkdir -p kerberos
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: bash
+      - name: Get and extract kerberos
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: kerberos
+        run: |
+          # kerberos for windows 2.6.0 (pre-built with Visual C++ 2003 Professional)
+          curl ${{ env.CK_CURL }} -o kfw-2.6-final-vc2003.zip https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip
+          7z x kfw-2.6-final-vc2003.zip
+          rm kfw-2.6-final-vc2003.zip
+        shell: bash
+      - run: mkdir -p superlat
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: bash
+      - name: Get Legacy Dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: superlat
+        run: |
+          # SuperLAT Headers
+          curl ${{ env.CK_CURL }} -o slatfio.zip https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip
+          7z x slatfio.zip
+          mkdir -p include
+          cd include
+          cp ..\TESTSVC\LATIOC.H
+          cp ..\TESTSVC\NETTYPES.H
+          cp ..\TESTSVC\NTDDTDI.H
+          cp ..\TESTSVC\PACKOFF.H
+          cp ..\TESTSVC\PACKON.H
+          cp ..\TESTSVC\TDI.H
+          cp ..\TESTSVC\TIHDR.H
+          cd ..
+          rm -rf TESTSVC
+          rm -rf CONN
+          rm -f README.1ST slatfio.zip
+        shell: bash
+
+      - name: Build libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-build"
+        with:
+          arch: ${{ inputs.arch }}
+          id: 'legacy'
+
+      - name: Build openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        env:
+          VCT2003: ${{ github.workspace }}\VCT2003
+        working-directory: openssl\1.0.1u
+        run: |
+          Set PATH=%VCT2003%\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          Set INCLUDE=%VCT2003%\include
+          Set LIB=%VCT2003%\lib;%LIB%
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\nasm
+          perl Configure VC-WIN32 enable-static-engine
+                   
+          call ms\do_ms.bat
+          
+          REM adjust the makefile to statically link
+          sed -i "s/\/MD /\/MT /g" ms\ntdll.mak
+          
+          nmake -f ms\ntdll.mak
+        shell: cmd
+
+      - name: Build libsrp
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        env:
+          ROOT: ${{ github.workspace }}
+          VCT2003: ${{ github.workspace }}\VCT2003
+        working-directory: srp-2.1.2
+        run: |
+          Set PATH=%VCT2003%\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          Set INCLUDE=%VCT2003%\include
+          Set LIB=%VCT2003%\lib
+          set CKB_STATIC_CRT_NT=yes
+          
+          set openssl_root_override=${{ github.workspace }}\openssl\1.0.1u
+          set srp_root_override=${{ github.workspace }}\srp-2.1.2
+          
+          call ..\setenv.bat
+          call mknt.bat
+        shell: cmd

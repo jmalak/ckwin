@@ -1,0 +1,38 @@
+name: cache-mingw-deps
+description: Handle Dependencies Cache mingw
+inputs:
+  flags:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Cache Dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}/openssl
+            ${{github.workspace}}/libssh
+            ${{github.workspace}}/zlib
+          key: deps-openssl-${{env.OPENSSL_VERSION}}-parallel
+
+      - name: Get and unpack openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+
+      - name: Build openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        env:
+          CXX: /usr/bin/x86_64-w64-mingw32-c++
+          CC: /usr/bin/x86_64-w64-mingw32-gcc
+          RC: /usr/bin/x86_64-w64-mingw32-windres
+        working-directory: openssl/${{env.OPENSSL_VERSION}}
+        run: |
+          perl Configure mingw64
+          make depend
+          make -j 2
+        shell: bash
+

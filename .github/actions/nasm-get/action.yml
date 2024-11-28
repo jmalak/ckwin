@@ -1,0 +1,16 @@
+name: nasm-get
+description: 'Download nasm'
+runs:
+  using: composite
+  steps:
+      - run: mkdir -p tools
+        shell: bash
+      - name: Get and unpack nasm
+        working-directory: tools
+        run: |
+          curl ${{ env.CK_CURL }} -o nasm-2.15.05-win32.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+          7z x nasm-2.15.05-win32.zip
+          rm -f nasm-2.15.05-win32.zip
+          mv nasm-2.15.05 nasm
+          ls -la nasm
+        shell: bash

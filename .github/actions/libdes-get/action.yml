@@ -1,0 +1,15 @@
+name: libdes-get
+description: 'Download libdes'
+runs:
+  using: composite
+  steps:
+      - run: mkdir -p libdes
+        shell: bash
+      - name: Get and unpack libdes
+        working-directory: libdes
+        run: |
+          curl ${{ env.CK_CURL }} -o libdes.tar.gz ${{env.LIBDES}}
+          7z x libdes.tar.gz
+          7z x libdes.tar
+          rm -f libdes.tar libdes.tar.gz
+        shell: bash

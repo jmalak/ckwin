@@ -1,0 +1,52 @@
+name: cache-vct2003-libdes-deps
+description: Handle Dependencies Cache vct2003-libdes
+runs:
+  using: composite
+  steps:
+      - name: Cache VCT2003+libdes
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\vct2003
+            ${{github.workspace}}\libdes\des
+            ${{github.workspace}}\libdes\Release
+            ${{github.workspace}}\libdes\Debug
+            ${{github.workspace}}\tools
+          key: vct2003+psdk2003sp1+libdes+v2+jom1
+      - name: Get VCT2003
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/vct2003-get"
+      - name: Get and unpack jom
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
+      - name: Get and unpack libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-get"
+
+      - name: Build libdes
+        env:
+          ROOT: ${{ github.workspace }}
+          VCT2003: ${{ github.workspace }}\VCT2003
+        working-directory: libdes
+        run: |
+          Set PATH=%VCT2003%\bin\win64;%VCT2003%\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          Set INCLUDE=%VCT2003%\include
+          Set LIB=%VCT2003%\lib\ia64
+          
+          call ${{ github.workspace }}\setenv.bat
+          
+          REM Use the supplied x86 build of wart rather than building it for
+          REM itanium then fail to run it on the not-itanium build host
+          set CKB_USE_WART=yes
+          set WART=${{github.workspace}}\ckwart.exe
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+
+          call mknt.bat
+        shell: cmd
+          

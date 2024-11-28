@@ -1,0 +1,13 @@
+name: vct2003-get
+description: 'Download vct2003'
+runs:
+  using: composite
+  steps:
+      - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003
+        run: |
+          curl ${{ env.CK_CURL }} -o X2003.7z https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+          7z x X2003.7z
+          rm X2003.7z
+          mv "Microsoft Platform SDK 2003SP1" VCT2003
+          rm VCT2003/Bin/Cvtres.exe
+        shell: bash

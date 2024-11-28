@@ -39,6 +39,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_dev.h"
 #include "pdll_defs.h"
@@ -60,7 +61,7 @@ static DEV_CFG dev_cfg;
 
 VOID
 #ifdef CK_ANSIC
-cleanup(void) 
+cleanup(void)
 #else
 cleanup()
 #endif
@@ -69,29 +70,46 @@ cleanup()
     dev_pushback_buf();
 
     if (path != NULL) {
-        if (p_cfg->close_func(&path,
-			  length,
-			  date,
-			  retransmits,
-			  FILE_FAILED,
-			  offset))
+        if (p_cfg->callbackp_close_func(&path,
+                          length,
+                          date,
+                          retransmits,
+                          FILE_FAILED,
+                          offset))
             user_aborted();
     }
     if (dev_ready) {
-	dev_set_cfg(&dev_cfg);
-	dev_close();
+        dev_set_cfg(&dev_cfg);
+        dev_close();
     }
 }
 
 U32
-CKDEVDLLENTRY
 #ifdef CK_ANSIC
-p_transfer(P_CFG *param_p_cfg) 
+status_func(U32 type, ...)
+#else
+status_func()
+U32 type;
+#endif
+{
+    va_list     va;
+    U32         rc;
+
+    va_start( va, type );
+    rc = va_status_func(type, va);
+    va_end( va );
+    return( rc );
+}
+
+U32
+CKXYZDLLENTRY
+#ifdef CK_ANSIC
+p_transfer(P_CFG *param_p_cfg)
 #else
 p_transfer() P_CFG *param_p_cfg ;
 #endif
 {
-    pdll_aborted = 0;		/* Reason of abortation */
+    pdll_aborted = 0;           /* Reason of abortation */
     user_aborted_visited = 0 ;
     skip_file = 0;
     move_file = 0 ;
@@ -102,16 +120,16 @@ p_transfer() P_CFG *param_p_cfg ;
     time_started = 0;
     retransmits = 0;
     blk_size = 0;
-  
+
     protocol_type = 0;
     transfer_direction = 0;
     use_1k_blocks = 0;
     use_alternative_checking = 0;
     send_rz_cr = 0;
 
-    if (setjmp(p_jmp_buf)) { 	/* If non-zero, we got here by jumping... */
-	cleanup();
-	return(1);
+    if (setjmp(p_jmp_buf)) {    /* If non-zero, we got here by jumping... */
+        cleanup();
+        return(1);
     }
     /* Initialization of dev variables */
 
@@ -125,7 +143,7 @@ p_transfer() P_CFG *param_p_cfg ;
 
     outbuf_size = 0;
     inbuf_size = 0;
-    timeouts_per_call = 1000;	/* About 10 seconds */
+    timeouts_per_call = 1000;   /* About 10 seconds */
     outbuf = NULL;
     outbuf_idx = 0;
     inbuf = NULL;
@@ -175,7 +193,7 @@ p_transfer() P_CFG *param_p_cfg ;
     rx_frame_end = 0;
     esc_8th_bit = 0;
     getting_frame = 0;
-    recovering = 0;	    /* Are we recovering from a CRC or other ERROR? */
+    recovering = 0;         /* Are we recovering from a CRC or other ERROR? */
     attn_len = 0;
     rx_buf = NULL;
     rx_buf_len = 0;
@@ -183,7 +201,7 @@ p_transfer() P_CFG *param_p_cfg ;
     tx_buf = NULL;
     tx_buf_len = 0;
     tx_buf_size = 0;
-    last_sync_pos = -1;		/* -1 is to prevent first block */
+    last_sync_pos = -1;         /* -1 is to prevent first block */
                                 /* from being send with a ZCRCW */
     tx_wincnt = 0;
     sync_cnt = 0;
@@ -208,9 +226,9 @@ p_transfer() P_CFG *param_p_cfg ;
     dev_telnet = (p_cfg->attr & CFG_DEV_TELNET);
     if ( dev_telnet )
     {
-	dev_telnet_u_binary = (p_cfg->attr & CFG_DEV_TELNET_U_BINARY);
-	dev_telnet_me_binary = (p_cfg->attr & CFG_DEV_TELNET_ME_BINARY);
-	dev_telnet_iac_escaped = !(p_cfg->attr & CFG_DEV_TELNET_IAC_NOT_ESCAPED);
+        dev_telnet_u_binary = (p_cfg->attr & CFG_DEV_TELNET_U_BINARY);
+        dev_telnet_me_binary = (p_cfg->attr & CFG_DEV_TELNET_ME_BINARY);
+        dev_telnet_iac_escaped = !(p_cfg->attr & CFG_DEV_TELNET_IAC_NOT_ESCAPED);
     }
     watch_carrier = (p_cfg->attr & CFG_WATCH_CARRIER);
     esc_minimal = (p_cfg->attr & CFG_ESC_MINIMAL);
@@ -221,9 +239,9 @@ p_transfer() P_CFG *param_p_cfg ;
     query_serial_num = (p_cfg->attr & CFG_QUERY_SERIAL_NUM);
     move_file = (p_cfg->attr & CFG_FILE_MOVE) ;
     if (p_cfg->attn_seq != NULL) {
-	strncpy(attn, p_cfg->attn_seq, 31);
-	attn[31] = '\0';
-	attn_len = strlen(attn);
+        strncpy(attn, p_cfg->attn_seq, 31);
+        attn[31] = '\0';
+        attn_len = strlen(attn);
     }
     dev_type = p_cfg->dev_type;
     dev_path = p_cfg->dev_path;
@@ -237,83 +255,83 @@ p_transfer() P_CFG *param_p_cfg ;
 
     inbuf_size = p_cfg->inbuf_size;
     outbuf_size = p_cfg->outbuf_size;
-  
+
     blk_size = p_cfg->blk_size;
 
     /* Done */
 
-    if (blk_size == 0) {		/* If not specified explicitly */
-	switch (protocol_type) {
-	case PROTOCOL_X:
-	    blk_size = 128;
-	    break;
-      
-	case PROTOCOL_Y:
-	case PROTOCOL_G:
-	    blk_size = 1024;
-	    break;
-      
-	case PROTOCOL_Z:
-	    blk_size = 0;
-	    break;
-	}
+    if (blk_size == 0) {                /* If not specified explicitly */
+        switch (protocol_type) {
+        case PROTOCOL_X:
+            blk_size = 128;
+            break;
+
+        case PROTOCOL_Y:
+        case PROTOCOL_G:
+            blk_size = 1024;
+            break;
+
+        case PROTOCOL_Z:
+            blk_size = 0;
+            break;
+        }
     }
     dev_open();
 #ifdef XYZ_DLL
     if ( dev_type == DEV_TYPE_ASYNC ){
         dev_get_cfg(&dev_cfg);
-        dev_chg_cfg(1000,		/* write timeout, used to be 300 */ 
-                     2,		/* read timeout */
+        dev_chg_cfg(1000,               /* write timeout, used to be 300 */
+                     2,         /* read timeout */
                      dev_cfg.flags1,
                      dev_cfg.flags2,
-                     (dev_cfg.flags3 & 248) | 2); 
+                     (dev_cfg.flags3 & 248) | 2);
         /* Write timeout processing and */
         /* Normal read timeout processing */
     }
 #endif /* XYZ_DLL */
 
     if (dev_server)
-	server_connect();
+        server_connect();
 
     switch (transfer_direction) {
     case DIR_SEND:
-	switch (protocol_type) {
-	case PROTOCOL_X:
-	case PROTOCOL_Y:
-	case PROTOCOL_G:
-	    syx();
-	    break;
-      
-	case PROTOCOL_Z:
-	    sz();
-	    break;
-	}
-	break;
+        switch (protocol_type) {
+        case PROTOCOL_X:
+        case PROTOCOL_Y:
+        case PROTOCOL_G:
+            syx();
+            break;
+
+        case PROTOCOL_Z:
+            sz();
+            break;
+        }
+        break;
 
     case DIR_RECV:
-	switch (protocol_type) {
-	case PROTOCOL_X:
-	case PROTOCOL_Y:
-	case PROTOCOL_G:
-	    ryx();
-	    break;
+        switch (protocol_type) {
+        case PROTOCOL_X:
+        case PROTOCOL_Y:
+        case PROTOCOL_G:
+            ryx();
+            break;
 
-	case PROTOCOL_Z:
-	    rz();
-	    break;
-	}
-	break;
+        case PROTOCOL_Z:
+            rz();
+            break;
+        }
+        break;
     }
     if (!pdll_aborted) {
-	if (p_cfg->status_func(PS_TRANSFER_DONE))
-	    user_aborted();
+        if (status_func(PS_TRANSFER_DONE))
+            user_aborted();
     } else if (pdll_aborted == A_REMOTE) {
-	if (p_cfg->status_func(PS_REMOTE_ABORTED))
-	    user_aborted();
+        if (status_func(PS_REMOTE_ABORTED))
+            user_aborted();
     }
     cleanup();
     if ( pdll_aborted )
-	return(-1);
+        return(-1);
     else
-	return(0);
+        return(0);
 }

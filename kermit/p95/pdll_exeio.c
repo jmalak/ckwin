@@ -25,11 +25,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 #include "ckcdeb.h"
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "p.h"
 #include "pdll_global.h"
@@ -54,14 +55,14 @@ exe_pushback_buf()
 #endif
 {
     if ( inbuf_idx != inbuf_len )
-        p_cfg->exe_pushback_func( &inbuf[inbuf_idx], 
+        p_cfg->callbackp_exe_pushback_func( &inbuf[inbuf_idx],
                                   inbuf_len - inbuf_idx );
     inbuf_len = inbuf_idx = 0;
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-exe_getch_buf(void) 
+exe_getch_buf(void)
 #else
 exe_getch_buf()
 #endif
@@ -72,30 +73,30 @@ exe_getch_buf()
 
     inbuf_idx = 0;
     inbuf_len = 0;
-    for (tmout_cnt = 0; 
-          !pdll_aborted && tmout_cnt < timeouts_per_call; 
-          tmout_cnt++) 
+    for (tmout_cnt = 0;
+          !pdll_aborted && tmout_cnt < timeouts_per_call;
+          tmout_cnt++)
     {
-        rc = p_cfg->exe_in_func( inbuf,	/* BufferArea */
-                                 inbuf_size,	/* BufferLength */
-                                 &inbuf_len);	/* BytesWritten */
-        if (rc && rc != ERROR_NO_DATA) 
+        rc = p_cfg->callbackp_exe_in_func( inbuf, /* BufferArea */
+                                 inbuf_size,    /* BufferLength */
+                                 &inbuf_len);   /* BytesWritten */
+        if (rc && rc != ERROR_NO_DATA)
         {
-            p_error(P_ERROR_DOSREAD, rc, 
+            p_error(P_ERROR_DOSREAD, rc,
                      MODULE_EXE, __LINE__, (intptr_t)"exe_io");
             pdll_aborted = A_CARRIER_LOST;
             return;
         }
-        if (inbuf_len)		/* Got something */
+        if (inbuf_len)          /* Got something */
             break;
         else
             DosSleep(30);
     }
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-exe_flush_outbuf(void) 
+exe_flush_outbuf(void)
 #else
 exe_flush_outbuf()
 #endif
@@ -107,44 +108,44 @@ exe_flush_outbuf()
 
     buf = outbuf;
     for (cnt = 0; !pdll_aborted && cnt < 300; cnt++) {
-	rc = p_cfg->exe_out_func( buf,			/* BufferArea */
-				  outbuf_idx,		/* BufferLength */
-				  &BytesWritten); /* BytesWritten */
-	if (rc)
-	    p_error(P_ERROR_DOSWRITE, rc,
-		     MODULE_EXE, __LINE__,
-		     (intptr_t)"exe_io");
-	if (BytesWritten == outbuf_idx) {
-	    outbuf_idx = 0;
-	    return;
-	} else {
-	    DosSleep(10);
-	    if (BytesWritten) {	/* We got something transferred? */
-		buf += BytesWritten;
-		outbuf_idx -= BytesWritten;
-	    }
-	}
+        rc = p_cfg->callbackp_exe_out_func( buf,                  /* BufferArea */
+                                  outbuf_idx,           /* BufferLength */
+                                  &BytesWritten); /* BytesWritten */
+        if (rc)
+            p_error(P_ERROR_DOSWRITE, rc,
+                     MODULE_EXE, __LINE__,
+                     (intptr_t)"exe_io");
+        if (BytesWritten == outbuf_idx) {
+            outbuf_idx = 0;
+            return;
+        } else {
+            DosSleep(10);
+            if (BytesWritten) { /* We got something transferred? */
+                buf += BytesWritten;
+                outbuf_idx -= BytesWritten;
+            }
+        }
     }
     p_error(P_ERROR_DOSWRITE, rc, MODULE_EXE, __LINE__, (intptr_t)"exe_io");
 }
 
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-exe_set_break_on(void) 
+exe_set_break_on(void)
 #else
 exe_set_break_on()
 #endif
 {
-   p_cfg->exe_break_func(1) ;
+   p_cfg->callbackp_exe_break_func(1) ;
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-exe_set_break_off(void) 
+exe_set_break_off(void)
 #else
 exe_set_break_off()
 #endif
 {
-   p_cfg->exe_break_func(0);
+   p_cfg->callbackp_exe_break_func(0);
 }

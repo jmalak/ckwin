@@ -30,14 +30,15 @@
 
 #ifdef NT
 #include <windows.h>
-#endif 
+#endif
 #include <stdio.h>
 #include <time.h>
 #include "p_type.h"
 #include "p.h"
+#include "p_callbk.h"
 
 P_CFG *p_cfg;
-U8 pdll_aborted = 0;		/* Reason of abortation */
+U8 pdll_aborted = 0;            /* Reason of abortation */
 U8 skip_file = 0;
 U32 move_file = 0 ;
 U32 offset = 0;

@@ -980,6 +980,8 @@
    Affects only Zmodem transfers.
 */
 
+#if 0
+
 #pragma pack(1)                     /* Use 1 byte alignment */
                                     /* in the structure */
 
@@ -1424,5 +1426,7 @@ typedef struct _P_CFG {
 } P_CFG;
 
 #pragma pack()                  /* Back to default alignment */
+
+#endif /* 0 */
 
 #endif /* _P_H_ */

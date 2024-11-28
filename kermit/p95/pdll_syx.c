@@ -35,6 +35,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_crc.h"
 #include "pdll_defs.h"
@@ -48,7 +49,7 @@
 
 VOID
 #ifdef CK_ANSIC
-syx_start(void) 
+syx_start(void)
 #else
 syx_start()
 #endif
@@ -60,14 +61,14 @@ syx_start()
 
   can_cnt = 0;
   time(&time_started);
-  dev_flush_outbuf();		/* Ymodem-g needs this */
+  dev_flush_outbuf();           /* Ymodem-g needs this */
   while (1) {
     ch = dev_getch_buf();
     switch (ch) {
     case NAK:
-      if (chk_type != CHK_SUM) {	/* Prevents us from repeating this */
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CHECKSUM))
-	  user_aborted();
+      if (chk_type != CHK_SUM) {        /* Prevents us from repeating this */
+        if (status_func(PS_CHECKING_METHOD, CHECKING_CHECKSUM))
+          user_aborted();
       }
       chk_type = CHK_SUM;
       return;
@@ -75,8 +76,8 @@ syx_start()
     case 'C':
     case 'G':
       if (chk_type != CHK_CRC16) { /* Prevents us from repeation this */
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
-	  user_aborted();
+        if (status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
+          user_aborted();
       }
       chk_type = CHK_CRC16;
       return;
@@ -84,8 +85,8 @@ syx_start()
     case CAN:
       can_cnt++;
       if (can_cnt == 5) {
-	pdll_aborted = A_REMOTE;
-	return;
+        pdll_aborted = A_REMOTE;
+        return;
       }
       break;
 
@@ -98,8 +99,8 @@ syx_start()
     }
     time(&time_now);
     if (time_now - time_started >= 60) {
-      if (p_cfg->status_func(PS_TIMEOUT, 60))
-	user_aborted();
+      if (status_func(PS_TIMEOUT, 60))
+        user_aborted();
       pdll_aborted = A_MISC;
       return;
     }
@@ -108,7 +109,7 @@ syx_start()
 
 VOID
 #ifdef CK_ANSIC
-syx_end(void) 
+syx_end(void)
 #else
 syx_end()
 #endif
@@ -119,7 +120,7 @@ syx_end()
   static time_t t_started;
   static time_t t_now;
 
-  cnt = 10;	/* 10 is part of XMODEM specification */
+  cnt = 10;     /* 10 is part of XMODEM specification */
   can_cnt = 0;
   while (1) {
     dev_putch_buf(EOT);
@@ -130,26 +131,26 @@ syx_end()
       ch = dev_getch_buf();
       switch (ch) {
       case ACK:
-	return;
-	
+        return;
+
       case CAN:
-	can_cnt++;
-	if (can_cnt == 5) {
-	  pdll_aborted = A_REMOTE;
-	  return;
-	}
-	break;
-	
+        can_cnt++;
+        if (can_cnt == 5) {
+          pdll_aborted = A_REMOTE;
+          return;
+        }
+        break;
+
       case DEV_TIMEOUT:
-	break;
-	
+        break;
+
       default:
-	can_cnt = 0;
-	break;
+        can_cnt = 0;
+        break;
       }
       time(&t_now);
       if (t_now - t_started >= 10)
-	break;			/* Bail out from the loop */
+        break;                  /* Bail out from the loop */
     }
     if (--cnt == 0)
       return;
@@ -158,7 +159,7 @@ syx_end()
 
 VOID
 #ifdef CK_ANSIC
-syx_null_header(void) 
+syx_null_header(void)
 #else
 syx_null_header()
 #endif
@@ -179,7 +180,7 @@ syx_null_header()
 
 VOID
 #ifdef CK_ANSIC
-syx_header(void) 
+syx_header(void)
 #else
 syx_header()
 #endif
@@ -199,9 +200,9 @@ syx_header()
   syx_start();
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-syx_block(void) 
+syx_block(void)
 #else
 syx_block()
 #endif
@@ -217,43 +218,43 @@ syx_block()
   static time_t t_now;
 
   checksum = 0;
-  i = 0;			/* Just to shut up the compiler */
+  i = 0;                        /* Just to shut up the compiler */
   this_block_retransmitted = 0;
   time(&t_sending_blk_started);
   while (1) {
-    if (!sending_header) {		/* If not file info block */
-      if (p_cfg->status_func(PS_PROGRESS, offset))
-	user_aborted();
+    if (!sending_header) {              /* If not file info block */
+      if (status_func(PS_PROGRESS, offset))
+        user_aborted();
     }
-    if (p_cfg->status_func(PS_PACKET_LENGTH, blk_size))
-	  user_aborted();
+    if (status_func(PS_PACKET_LENGTH, blk_size))
+          user_aborted();
 
     switch (blk_size) {
     case 128:
       dev_putch_buf(SOH);
       break;
-      
+
     case 1024:
       dev_putch_buf(STX);
       break;
     }
-    dev_putch_buf(blk[1]);	/* Block numbers */
+    dev_putch_buf(blk[1]);      /* Block numbers */
     dev_putch_buf(blk[2]);
 
     switch (chk_type) {
     case CHK_CRC16:
       for (i = 3; i < blk_end; i++) {
-	dev_putch_buf(blk[i]);
-	checksum = updcrc16(blk[i], checksum);
+        dev_putch_buf(blk[i]);
+        checksum = updcrc16(blk[i], checksum);
       }
       dev_putch_buf((checksum >> 8) & 0xFF);
       dev_putch_buf(checksum & 0xFF);
       break;
-      
+
     case CHK_SUM:
       for (i = 3; i < blk_end; i++) {
-	dev_putch_buf(blk[i]);
-	checksum = (checksum + blk[i]) & 0xFF;
+        dev_putch_buf(blk[i]);
+        checksum = (checksum + blk[i]) & 0xFF;
       }
       dev_putch_buf(checksum);
       break;
@@ -264,65 +265,65 @@ syx_block()
       /* transmitted after header blocks             */
       /***********************************************/
       if (!sending_header) {
-	while (dev_incoming()) {
-	  ch = dev_getch_buf();
-	  switch (ch) {
-	  case CAN:
-	    can_cnt++;
-	    if (can_cnt == 5) {
-	      pdll_aborted = A_REMOTE;
-	      return;
-	    }
-	    break;
+        while (dev_incoming()) {
+          ch = dev_getch_buf();
+          switch (ch) {
+          case CAN:
+            can_cnt++;
+            if (can_cnt == 5) {
+              pdll_aborted = A_REMOTE;
+              return;
+            }
+            break;
 
-	  default:
-	    can_cnt = 0;
-	    break;
-	  }
-	}
+          default:
+            can_cnt = 0;
+            break;
+          }
+        }
       }
-      break;			/* Bail out the loop */
-    } else {			/* Get an acknowledge for the packet sent */
-      dev_flush_outbuf();	/* We'll have to do this to get acknowledged */
+      break;                    /* Bail out the loop */
+    } else {                    /* Get an acknowledge for the packet sent */
+      dev_flush_outbuf();       /* We'll have to do this to get acknowledged */
       time(&t_getting_ack_started);
       bail = 0;
       can_cnt = 0;
       while (!bail) {
-	ch = dev_getch_buf();
-	switch (ch) {
-	case ACK:
-	  bail = 1;
-	  break;
+        ch = dev_getch_buf();
+        switch (ch) {
+        case ACK:
+          bail = 1;
+          break;
 
-	case NAK:
-	  if (p_cfg->status_func(PS_XYG_NAK, offset))
-	    user_aborted();
-	  bail = 1;
-	  break;
-	  
-	case CAN:
-	  can_cnt++;
-	  if (can_cnt == 5) {
-	    pdll_aborted = A_REMOTE;
-	    bail = 1;
-	  }
-	  break;
+        case NAK:
+          if (status_func(PS_XYG_NAK, offset))
+            user_aborted();
+          bail = 1;
+          break;
 
-	case DEV_TIMEOUT:
-	  break;
-	  
-	default:
-	  can_cnt = 0;
-	  break;
-	}
-	if (!bail) {
-	  time(&t_now);
-	  if (t_now - t_getting_ack_started >= 10) {
-	    if (p_cfg->status_func(PS_TIMEOUT, 10))
-	      user_aborted();
-	    bail = 1;
-	  }
-	}
+        case CAN:
+          can_cnt++;
+          if (can_cnt == 5) {
+            pdll_aborted = A_REMOTE;
+            bail = 1;
+          }
+          break;
+
+        case DEV_TIMEOUT:
+          break;
+
+        default:
+          can_cnt = 0;
+          break;
+        }
+        if (!bail) {
+          time(&t_now);
+          if (t_now - t_getting_ack_started >= 10) {
+            if (status_func(PS_TIMEOUT, 10))
+              user_aborted();
+            bail = 1;
+          }
+        }
       }
     }
     if (ch == ACK || pdll_aborted)
@@ -330,23 +331,23 @@ syx_block()
     this_block_retransmitted++;
     time(&t_now);
     if (t_now - t_sending_blk_started >= 120) { /* So that we won't loop */
-						/* forever */
-      if (p_cfg->status_func(PS_CANNOT_SEND_BLOCK))
-	user_aborted();
+                                                /* forever */
+      if (status_func(PS_CANNOT_SEND_BLOCK))
+        user_aborted();
       pdll_aborted = A_MISC;
       break;
     }
   }
-    if (p_cfg->status_func(PS_PROGRESS, offset))
-	user_aborted();
+    if (status_func(PS_PROGRESS, offset))
+        user_aborted();
   retransmits += this_block_retransmitted;
   blk[1]++;
   blk[2]--;
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-syx_file(void) 
+syx_file(void)
 #else
 syx_file()
 #endif
@@ -358,50 +359,50 @@ syx_file()
   syx_start();
   if (pdll_aborted)
     return;
-  if (path == NULL) {		/* No more files to send */
+  if (path == NULL) {           /* No more files to send */
     syx_null_header();
-    dev_flush_outbuf();		/* Ymodem-g needs this */
+    dev_flush_outbuf();         /* Ymodem-g needs this */
     return;
   }
   offset = 0;
   retransmits = 0;
 
-  if (protocol_type == PROTOCOL_X) {	/* X doesn't have headers */
+  if (protocol_type == PROTOCOL_X) {    /* X doesn't have headers */
     blk[1] = 1;
     blk[2] = 254;
   } else
     syx_header();
-  
+
   if (!pdll_aborted) {
     while (1) {
-      if (p_cfg->read_func(&blk[3], blk_size, &rw_ret))
-	user_aborted();
+      if (p_cfg->callbackp_read_func(&blk[3], blk_size, &rw_ret))
+        user_aborted();
       /************************************/
       /* Fill the rest of block with EOFs */
       /************************************/
       for (i = 3 + rw_ret; i < blk_end; i++)
-	blk[i] = 0x1A;	/* EOF */
+        blk[i] = 0x1A;  /* EOF */
       syx_block();
       if (pdll_aborted)
-	break;
+        break;
       offset += rw_ret;
       if (rw_ret < blk_size)
-	break;
+        break;
     }
   }
   if (!pdll_aborted)
     syx_end();
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-syx(void) 
+syx(void)
 #else
 syx()
 #endif
 {
 
-  timeouts_per_call = 10;	/* We'll just wait about 3 seconds */
+  timeouts_per_call = 10;       /* We'll just wait about 3 seconds */
   if (use_1k_blocks)
     blk_size = 1024;
   else
@@ -413,24 +414,24 @@ syx()
   while (1) {
     length = -1;
     date = -1;
-    if (p_cfg->s_open_func(&path, &length, (U32 *)&date, &mode,
-			   &pdll_files_left, &pdll_bytes_left,
-			   NULL, NULL, NULL))
+    if (p_cfg->callbackp_s_open_func(&path, &length, (U32 *)&date, &mode,
+                           &pdll_files_left, &pdll_bytes_left,
+                           NULL, NULL, NULL))
       user_aborted();
     if (protocol_type == PROTOCOL_X && path == NULL) /* No more files and */
-						     /* doing X? */
+                                                     /* doing X? */
       break;
     syx_file();
     if (pdll_aborted || path == NULL) /* Aborted or no more files? */
       break;
     if (path != NULL) {
-      if (p_cfg->close_func(&path,
-			    length,
-			    date,
-			    retransmits,
-			    pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
-			    offset))
-	user_aborted();
+      if (p_cfg->callbackp_close_func(&path,
+                            length,
+                            date,
+                            retransmits,
+                            pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
+                            offset))
+        user_aborted();
     }
   }
   pdll_free((void **)&blk, MODULE_SYX, __LINE__);

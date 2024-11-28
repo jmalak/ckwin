@@ -43,6 +43,7 @@
 #include "ckcdeb.h"
 
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_defs.h"
 #include "pdll_global.h"
@@ -51,21 +52,21 @@
 #include "pdll_z_global.h"
 #include "pdll_modules.h"
 
-U32 
+U32
 #ifdef CK_ANSIC
-get_header_field(U8 *buf, U32 *buf_idx, U32 buf_end, U32 *value_idx) 
+get_header_field(U8 *buf, U32 *buf_idx, U32 buf_end, U32 *value_idx)
 #else
-get_header_field() U8 *buf; U32 *buf_idx; U32 buf_end; U32 *value_idx; 
+get_header_field() U8 *buf; U32 *buf_idx; U32 buf_end; U32 *value_idx;
 #endif
 {
-  (*buf_idx)++;			/* Skip the null from previous field */
+  (*buf_idx)++;                 /* Skip the null from previous field */
   *value_idx = *buf_idx;
   while (1) {
     if (*buf_idx == buf_end) {
       if (*buf_idx != *value_idx) { /* Were there some numbers */
-				    /* after the size? */
-	if (p_cfg->status_func(PS_NON_STD_FILE_INFO))
-	  user_aborted();
+                                    /* after the size? */
+        if (status_func(PS_NON_STD_FILE_INFO))
+          user_aborted();
       }
       return(1);
     }
@@ -78,7 +79,7 @@ get_header_field() U8 *buf; U32 *buf_idx; U32 buf_end; U32 *value_idx;
 
 VOID
 #ifdef CK_ANSIC
-process_file_info(void) 
+process_file_info(void)
 #else
 process_file_info()
 #endif
@@ -88,7 +89,7 @@ process_file_info()
   U32 buf_end;
   U32 value_idx;
 
-  date = -1;			/* These are important */
+  date = -1;                    /* These are important */
   length = -1;
 
   switch (protocol_type) {
@@ -100,7 +101,7 @@ process_file_info()
     break;
 
   case PROTOCOL_Z:
-  default:			/* Just to shut up the compiler */
+  default:                      /* Just to shut up the compiler */
     buf = rx_buf;
     buf_end = rx_buf_len;
     break;
@@ -111,8 +112,8 @@ process_file_info()
     return;
   while (1) {
     if (buf_idx == buf_end) {
-      if (p_cfg->status_func(PS_INVALID_FILE_INFO))
-	user_aborted();
+      if (status_func(PS_INVALID_FILE_INFO))
+        user_aborted();
       pdll_aborted = A_MISC;
       return;
     }
@@ -148,7 +149,7 @@ process_file_info()
   if (get_header_field(buf, &buf_idx, buf_end, &value_idx))
     return;
   sscanf(&buf[value_idx], "%ld", &pdll_files_left);
-  
+
   /* Bytes left */
   if (get_header_field(buf, &buf_idx, buf_end, &value_idx))
     return;

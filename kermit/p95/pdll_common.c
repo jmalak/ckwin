@@ -36,6 +36,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_defs.h"
 #include "pdll_dev.h"
@@ -45,7 +46,7 @@ VOID msg(U32, U8 *, ...);
 
 VOID
 #ifdef CK_ANSIC
-cancel(void) 
+cancel(void)
 #else
 cancel()
 #endif
@@ -55,18 +56,18 @@ cancel()
 
     dev_purge_outbuf();
     while (caninstr[i])
-	dev_putch_buf(caninstr[i++]);
+        dev_putch_buf(caninstr[i++]);
     dev_flush_outbuf();
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-pdll_carrier_lost(void) 
-#else 
+pdll_carrier_lost(void)
+#else
 pdll_carrier_lost()
-#endif 
+#endif
 {
-  if (p_cfg->status_func(PS_CARRIER_LOST))
+  if (status_func(PS_CARRIER_LOST))
     user_aborted();
   pdll_aborted = A_CARRIER_LOST;
   longjmp(p_jmp_buf, 1);
@@ -76,18 +77,18 @@ U32 user_aborted_visited = 0 ;
 
 VOID
 #ifdef CK_ANSIC
-user_aborted(void) 
+user_aborted(void)
 #else
 user_aborted()
 #endif
 {
     if (user_aborted_visited)
-	return;
+        return;
     else
-	user_aborted_visited = 1;
+        user_aborted_visited = 1;
 
     if (dev_ready)
-	cancel();
+        cancel();
     /* if you set pdll_aborted before calling */
     /* cancel(), you won't transmit the cancellation */
     /* sequence. */
@@ -109,15 +110,15 @@ user_aborted()
 
 VOID
 #ifdef CK_ANSIC
-server_connect(void) 
-#else 
+server_connect(void)
+#else
 server_connect()
 #endif
 {
   U32 cnt = 0;
 
   do {
-    if (p_cfg->status_func(PS_SERVER_WAITING, cnt++))
+    if (status_func(PS_SERVER_WAITING, cnt++))
       user_aborted();
   } while (!dev_connect());
 }

@@ -4,16 +4,16 @@
 /*****************************************************************************/
 
 #ifdef NT
-#define CKDEVDLLENTRY
+#define CKXYZDLLENTRY
 #else /* NT */
 #ifdef OS2
-#define CKDEVDLLENTRY	_System
+#define CKXYZDLLENTRY   _System
 #else /* OS2 */
-#define CKDEVDLLENTRY
+#define CKXYZDLLENTRY
 #endif /* OS2 */
 #endif /* NT */
 
-typedef U32 CKDEVDLLENTRY p_transfer_func(P_CFG *);
+typedef U32 CKXYZDLLENTRY p_transfer_func(P_CFG *);
 #ifdef XYZ_DLL
 #ifdef XYZ_DLL_CLIENT
 extern p_transfer_func * p_transfer;

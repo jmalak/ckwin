@@ -31,12 +31,13 @@
 
 #include <time.h>
 #include "p.h"
+//#include "p_callbk.h"
 
-#define CHK_SUM		0x01
-#define CHK_CRC16	0x02
+#define CHK_SUM         0x01
+#define CHK_CRC16       0x02
 
-#define FILE_FAILED	0
-#define FILE_SUCCESSFUL	1
+#define FILE_FAILED     0
+#define FILE_SUCCESSFUL 1
 
 extern P_CFG *p_cfg;
 extern U8 pdll_aborted;

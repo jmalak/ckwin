@@ -36,6 +36,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_defs.h"
 #include "pdll_dev.h"
@@ -46,19 +47,19 @@
 #include "pdll_z.h"
 #include "pdll_z_global.h"
 
-U32 
+U32
 #ifdef CK_ANSIC
-rz_open_file(void) 
+rz_open_file(void)
 #else
 rz_open_file()
 #endif
 {
 
   offset = 0;
-  if (p_cfg->r_open_func(&path, length, date, mode,
-			 pdll_files_left, pdll_bytes_left,
-			 remote_zconv, remote_zmanag, remote_ztrans,
-			 &offset))
+  if (p_cfg->callbackp_r_open_func(&path, length, date, mode,
+                         pdll_files_left, pdll_bytes_left,
+                         remote_zconv, remote_zmanag, remote_ztrans,
+                         &offset))
     user_aborted();
   if (path == NULL) {
     /* An error occurred while opening the file, we'll skip it... */
@@ -70,7 +71,7 @@ rz_open_file()
 
 VOID
 #ifdef CK_ANSIC
-rz_over_and_out(void) 
+rz_over_and_out(void)
 #else
 rz_over_and_out()
 #endif
@@ -81,14 +82,14 @@ rz_over_and_out()
   U32 old_timeouts_per_call;
 
   old_timeouts_per_call = timeouts_per_call;
-  timeouts_per_call = 33;	/* About 1 sec */
+  timeouts_per_call = 33;       /* About 1 sec */
   *(U32 *)tx_hdr = 0L;
   for (try_cnt = 0; try_cnt < 3; try_cnt++) {
     z_send_hex_header(ZFIN);
     c = dev_getch_buf();
     switch (c) {
     case 'O':
-      timeouts_per_call = 3;	/* About .1 sec */
+      timeouts_per_call = 3;    /* About .1 sec */
       dev_getch_buf();
       timeouts_per_call = old_timeouts_per_call;
       return;
@@ -103,9 +104,9 @@ rz_over_and_out()
 
 VOID
 #ifdef CK_ANSIC
-rz_file_info(void) 
+rz_file_info(void)
 #else
-rz_file_info()     
+rz_file_info()
 #endif
 {
 
@@ -114,39 +115,39 @@ rz_file_info()
   U32 retry_cnt;
   time_t time_started;
   time_t time_now;
-  time_t time_last_zrinit = 0;	/* Just to shut up the compiler */
+  time_t time_last_zrinit = 0;  /* Just to shut up the compiler */
 
   time(&time_started);
   time_last_zrinit = time_started; /* To prevent us from timeoutting */
-				   /* right from the beginning */
+                                   /* right from the beginning */
   while (1) {
     time(&time_now);
     if (time_now - time_started >= 40) {
-      if (p_cfg->status_func(PS_TIMEOUT, 40))
-	user_aborted();
+      if (status_func(PS_TIMEOUT, 40))
+        user_aborted();
       pdll_aborted = A_MISC;
       return;
     } else if (time_now - time_last_zrinit >= 10) {
-      if (p_cfg->status_func(PS_TIMEOUT, 10))
-	user_aborted();
+      if (status_func(PS_TIMEOUT, 10))
+        user_aborted();
       send_zrinit = 1;
     }
     if (send_zrinit) {
       send_zrinit = 0;
       time_last_zrinit = time_now;
       if (use_alternative_checking) {
-	tx_hdr[ZF0] = CANFDX | CANOVIO;
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
-	  user_aborted();
+        tx_hdr[ZF0] = CANFDX | CANOVIO;
+        if (status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
+          user_aborted();
       } else {
-	tx_hdr[ZF0] = CANFC32 | CANFDX | CANOVIO;
-	if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC32))
-	  user_aborted();
+        tx_hdr[ZF0] = CANFC32 | CANFDX | CANOVIO;
+        if (status_func(PS_CHECKING_METHOD, CHECKING_CRC32))
+          user_aborted();
       }
       if (esc_control)
-	tx_hdr[ZF0] |= TESCCTL;
+        tx_hdr[ZF0] |= TESCCTL;
       if (esc_8th_bit)
-	tx_hdr[ZF0] |= TESC8;
+        tx_hdr[ZF0] |= TESC8;
       tx_hdr[ZF1] = 0;
       tx_hdr[ZP0] = blk_size & 0xff;
       tx_hdr[ZP1] = blk_size >> 8;
@@ -154,7 +155,7 @@ rz_file_info()
       *(U32 *)tx_hdr = 0;
     }
     c = z_get_header();
-    if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+    if (status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
       user_aborted();
 
     switch (c) {
@@ -162,120 +163,120 @@ rz_file_info()
       rz_over_and_out();
       zfin_recvd = 1;
       return;
-      
+
     case ZFILE:
-      time(&time_last_zrinit);	/* This prevents us from timeouting if we */
-				/* get a lot of ZSKIPs, that is, for */
-				/* over 10 secs */
+      time(&time_last_zrinit);  /* This prevents us from timeouting if we */
+                                /* get a lot of ZSKIPs, that is, for */
+                                /* over 10 secs */
       remote_zconv = rx_hdr[ZF0];
       remote_zmanag = rx_hdr[ZF1];
       remote_ztrans = rx_hdr[ZF2];
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
-	user_aborted();
+      if (status_func(PS_Z_FRAME_END, outframe(c)))
+        user_aborted();
       switch (c) {
-      case GOTCRCW:		/* Got what we wanted */
-	process_file_info();
-	if (pdll_aborted)
-	  return;
+      case GOTCRCW:             /* Got what we wanted */
+        process_file_info();
+        if (pdll_aborted)
+          return;
 
-	switch (rz_open_file()) {
-	case ZSKIP:
-	  *(U32 *)tx_hdr = 0L;
-	  z_send_hex_header(ZSKIP);
-	  continue;
-	  
-	case ZRPOS:
-	  *(U32 *)tx_hdr = offset;
-	  z_send_hex_header(ZRPOS);
-	  return;	/* Let's go and transfer the file */
+        switch (rz_open_file()) {
+        case ZSKIP:
+          *(U32 *)tx_hdr = 0L;
+          z_send_hex_header(ZSKIP);
+          continue;
 
-	default:
-	  /* Never gets here because rz_open_file() returns */
-	  /* only ZSKIP or ZRPOS */
-	  break;
-	}
-	break;
+        case ZRPOS:
+          *(U32 *)tx_hdr = offset;
+          z_send_hex_header(ZRPOS);
+          return;       /* Let's go and transfer the file */
+
+        default:
+          /* Never gets here because rz_open_file() returns */
+          /* only ZSKIP or ZRPOS */
+          break;
+        }
+        break;
 
       case GOTCAN:
-	pdll_aborted = A_REMOTE;
-	return;
+        pdll_aborted = A_REMOTE;
+        return;
 
       case DEV_TIMEOUT:
-	break;
-	
+        break;
+
       case GOTERROR:
-	break;
-	
+        break;
+
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
-	  user_aborted();
-	*(U32 *)tx_hdr = 0L;
-	z_send_hex_header(ZNAK);
-	break;
-	
+        if (status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+          user_aborted();
+        *(U32 *)tx_hdr = 0L;
+        z_send_hex_header(ZNAK);
+        break;
+
       default:
-	/* We never get here */
-	break;
+        /* We never get here */
+        break;
       }
       break;
 
     case ZRQINIT:
       send_zrinit = 1;
       break;
-      
+
     case ZSINIT:
       if (rx_hdr[ZF0] & TESCCTL)
-	esc_control = 1;
+        esc_control = 1;
       if (rx_hdr[ZF0] & TESC8)
-	esc_8th_bit = 1;
-      if (p_cfg->status_func(PS_Z_SENDER_FLAGS, rx_hdr[ZF0]))
-	user_aborted();
-      
+        esc_8th_bit = 1;
+      if (status_func(PS_Z_SENDER_FLAGS, rx_hdr[ZF0]))
+        user_aborted();
+
       rx_buf_size = 32;
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
-	user_aborted();
+      if (status_func(PS_Z_FRAME_END, outframe(c)))
+        user_aborted();
       rx_buf_size = 1024;
       switch (c) {
       case GOTCRCW:
-	/**********************************************/
-	/* Let's save the received attention sequence */
-	/**********************************************/
-	attn_len = rx_buf_len - 1; /* Don't include the null */
-	memcpy(attn, rx_buf, rx_buf_len);
-	
-	*(U32 *)tx_hdr = p_cfg->serial_num;
-	z_send_hex_header(ZACK);
-	break;
+        /**********************************************/
+        /* Let's save the received attention sequence */
+        /**********************************************/
+        attn_len = rx_buf_len - 1; /* Don't include the null */
+        memcpy(attn, rx_buf, rx_buf_len);
+
+        *(U32 *)tx_hdr = p_cfg->serial_num;
+        z_send_hex_header(ZACK);
+        break;
 
       case GOTCAN:
-	pdll_aborted = A_REMOTE;
-	return;
+        pdll_aborted = A_REMOTE;
+        return;
 
       case DEV_TIMEOUT:
-	break;
+        break;
 
       case GOTERROR:
-	break;
+        break;
 
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
-	  user_aborted();
-	*(U32 *)tx_hdr = 0L;
-	z_send_hex_header(ZNAK);
-	break;
-	
+        if (status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+          user_aborted();
+        *(U32 *)tx_hdr = 0L;
+        z_send_hex_header(ZNAK);
+        break;
+
       default:
-	/* We never get here */
-	break;
+        /* We never get here */
+        break;
       }
       break;
-      
+
     case ZFREECNT:
       *(U32 *)tx_hdr = ~0L;
       z_send_hex_header(ZACK);
@@ -283,58 +284,58 @@ rz_file_info()
 
     case ZCOMMAND:
       c = z_recv_block();
-      if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
-	user_aborted();
+      if (status_func(PS_Z_FRAME_END, outframe(c)))
+        user_aborted();
       *(U32 *)tx_hdr = 0L;
       switch (c) {
       case GOTCRCW:
-	if (p_cfg->status_func(PS_Z_COMMAND, rx_buf))
-	  user_aborted();
-	for (retry_cnt = 0; retry_cnt < 10; retry_cnt++) {
-	  z_send_hex_header(ZCOMPL);
-	  c = z_get_header();
-	  if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
-	    user_aborted();
-	  switch (c) {
-	  case ZCAN:
-	    pdll_aborted = A_REMOTE;
-	    return;
+        if (status_func(PS_Z_COMMAND, rx_buf))
+          user_aborted();
+        for (retry_cnt = 0; retry_cnt < 10; retry_cnt++) {
+          z_send_hex_header(ZCOMPL);
+          c = z_get_header();
+          if (status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+            user_aborted();
+          switch (c) {
+          case ZCAN:
+            pdll_aborted = A_REMOTE;
+            return;
 
-	  case ZFIN:
-	    rz_over_and_out();
-	    zfin_recvd = 1;
-	    return;
+          case ZFIN:
+            rz_over_and_out();
+            zfin_recvd = 1;
+            return;
 
-	  default:
-	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
-	      user_aborted();
-	    break;
-	  }
-	}
-	break;
+          default:
+            if (status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+              user_aborted();
+            break;
+          }
+        }
+        break;
 
       case GOTCAN:
-	pdll_aborted = A_REMOTE;
-	return;
+        pdll_aborted = A_REMOTE;
+        return;
 
       case DEV_TIMEOUT:
-	break;
+        break;
 
       case GOTERROR:
-	break;
+        break;
 
       case GOTCRCE:
       case GOTCRCG:
       case GOTCRCQ:
-	if (p_cfg->status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
-	  user_aborted();
-	*(U32 *)tx_hdr = 0L;
-	z_send_hex_header(ZNAK);
-	break;
-	
+        if (status_func(PS_Z_INVALID_FRAME_END, outframe(c)))
+          user_aborted();
+        *(U32 *)tx_hdr = 0L;
+        z_send_hex_header(ZNAK);
+        break;
+
       default:
-	/* We never get here */
-	break;
+        /* We never get here */
+        break;
       }
       break;
 
@@ -343,22 +344,22 @@ rz_file_info()
 
     case GOTERROR:
       break;
-      
+
     case ZCAN:
       pdll_aborted = A_REMOTE;
       return;
-      
+
     default:
-      if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
-	user_aborted();
+      if (status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+        user_aborted();
       break;
     }
   }
 }
 
-U32 
+U32
 #ifdef CK_ANSIC
-rz_file(void) 
+rz_file(void)
 #else
 rz_file()
 #endif
@@ -372,155 +373,155 @@ rz_file()
 
     offset = 0;
     retransmits = 0;
-    rx_buf_size = 1024;		/* Maximum subpacket size */
+    rx_buf_size = 1024;         /* Maximum subpacket size */
 
     rz_file_info();
     if (zfin_recvd || pdll_aborted || path == NULL)
-	return(1);
+        return(1);
     while (!bail) {
-	c = z_get_header();
-	if (p_cfg->status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
-	    user_aborted();
-	if (c == ZEOF) {
-	    if (*(U32 *)rx_hdr != offset) {
-		if (p_cfg->status_func(PS_Z_PHONY_ZEOF))
-		    user_aborted();
-		continue;
-	    }
-	    break;			/* Break out from the loop */
-	}
-	if (c != ZDATA) {
-	    time(&t_now);
-	    if (t_prev) {
-		if (t_now - t_prev >= 180) {	     /* We've got non-ZDATA headers */
-		    /* for 3 minutes, it's time to */
-		    /* call quits */
-		    if (p_cfg->status_func(PS_TIMEOUT, 180))
-			user_aborted();
-		    pdll_aborted = A_MISC;
-		    ret_val = 1;
-		    break;			/* Break out from the loop */
-		}
-	    } else
-		t_prev = t_now;
-	} else
-	    t_prev = 0;
-	switch (c) {
-	case ZDATA:
-	    if (*(U32 *)rx_hdr != offset) {
-		if (p_cfg->status_func(PS_Z_DATA_FROM_INVALID_POS, *(U32 *)rx_hdr, offset))
-		    user_aborted();
-		z_send_attn();
-		*(U32 *)tx_hdr = offset;
-		z_send_hex_header(ZRPOS);
-		break;
-	    }
-	    bail_from_block_loop = 0;
-	    while (!bail_from_block_loop) {
-		if (p_cfg->status_func(PS_PROGRESS, offset))
-		    user_aborted();
-		c = z_recv_block();
-		if (p_cfg->status_func(PS_Z_FRAME_END, outframe(c)))
-		    user_aborted();
+        c = z_get_header();
+        if (status_func(PS_Z_HEADER, outheader(c), *(U32 *)rx_hdr))
+            user_aborted();
+        if (c == ZEOF) {
+            if (*(U32 *)rx_hdr != offset) {
+                if (status_func(PS_Z_PHONY_ZEOF))
+                    user_aborted();
+                continue;
+            }
+            break;                      /* Break out from the loop */
+        }
+        if (c != ZDATA) {
+            time(&t_now);
+            if (t_prev) {
+                if (t_now - t_prev >= 180) {         /* We've got non-ZDATA headers */
+                    /* for 3 minutes, it's time to */
+                    /* call quits */
+                    if (status_func(PS_TIMEOUT, 180))
+                        user_aborted();
+                    pdll_aborted = A_MISC;
+                    ret_val = 1;
+                    break;                      /* Break out from the loop */
+                }
+            } else
+                t_prev = t_now;
+        } else
+            t_prev = 0;
+        switch (c) {
+        case ZDATA:
+            if (*(U32 *)rx_hdr != offset) {
+                if (status_func(PS_Z_DATA_FROM_INVALID_POS, *(U32 *)rx_hdr, offset))
+                    user_aborted();
+                z_send_attn();
+                *(U32 *)tx_hdr = offset;
+                z_send_hex_header(ZRPOS);
+                break;
+            }
+            bail_from_block_loop = 0;
+            while (!bail_from_block_loop) {
+                if (status_func(PS_PROGRESS, offset))
+                    user_aborted();
+                c = z_recv_block();
+                if (status_func(PS_Z_FRAME_END, outframe(c)))
+                    user_aborted();
 
-		/* Note the continue keywords in following switch () thing */
-		switch (c) {
-		case GOTCAN:
-		    pdll_aborted = A_REMOTE;
-		    ret_val = bail = bail_from_block_loop = 1;
-		    continue;
+                /* Note the continue keywords in following switch () thing */
+                switch (c) {
+                case GOTCAN:
+                    pdll_aborted = A_REMOTE;
+                    ret_val = bail = bail_from_block_loop = 1;
+                    continue;
 
-		case DEV_TIMEOUT:
-		    *(U32 *)tx_hdr = offset;
-		    z_send_hex_header(ZRPOS);
-		    bail_from_block_loop = 1;
-		    continue;
+                case DEV_TIMEOUT:
+                    *(U32 *)tx_hdr = offset;
+                    z_send_hex_header(ZRPOS);
+                    bail_from_block_loop = 1;
+                    continue;
 
-		case GOTERROR:
-		    z_send_attn();
-		    *(U32 *)tx_hdr = offset;
-		    z_send_hex_header(ZRPOS);
-		    bail_from_block_loop = 1;
-		    retransmits++;
-		    continue;
+                case GOTERROR:
+                    z_send_attn();
+                    *(U32 *)tx_hdr = offset;
+                    z_send_hex_header(ZRPOS);
+                    bail_from_block_loop = 1;
+                    retransmits++;
+                    continue;
 
-		case GOTCRCE:
-		case GOTCRCG:
-		case GOTCRCQ:
-		case GOTCRCW:
-		    /* Do nothing yet, wait for buffer to be written */
-		    break;
+                case GOTCRCE:
+                case GOTCRCG:
+                case GOTCRCQ:
+                case GOTCRCW:
+                    /* Do nothing yet, wait for buffer to be written */
+                    break;
 
-		default:
-		    /* We never get here... */
-		    break;	
-		}
-		if (p_cfg->write_func(rx_buf, rx_buf_len))
-		    user_aborted();
-		offset += rx_buf_len;
-		switch (rx_frame_end) {
-		case ZCRCW:
-		    dev_putch_buf(XON);
-		    *(U32 *)tx_hdr = offset;
-		    z_send_hex_header(ZACK);
-		    bail_from_block_loop = 1; /* Bail out to get a new header */
-		    break;
+                default:
+                    /* We never get here... */
+                    break;
+                }
+                if (p_cfg->callbackp_write_func(rx_buf, rx_buf_len))
+                    user_aborted();
+                offset += rx_buf_len;
+                switch (rx_frame_end) {
+                case ZCRCW:
+                    dev_putch_buf(XON);
+                    *(U32 *)tx_hdr = offset;
+                    z_send_hex_header(ZACK);
+                    bail_from_block_loop = 1; /* Bail out to get a new header */
+                    break;
 
-		case ZCRCQ:
-		    *(U32 *)tx_hdr = offset;
-		    z_send_hex_header(ZACK);
-		    /* Keep on getting data */
-		    break;	
+                case ZCRCQ:
+                    *(U32 *)tx_hdr = offset;
+                    z_send_hex_header(ZACK);
+                    /* Keep on getting data */
+                    break;
 
-		case ZCRCG:
-		    break;
+                case ZCRCG:
+                    break;
 
-		case ZCRCE:
-		    bail_from_block_loop = 1;
-		    break;
-		}
-	    }
-	    if (p_cfg->status_func(PS_PROGRESS, offset))
-		user_aborted();
-	    break;
+                case ZCRCE:
+                    bail_from_block_loop = 1;
+                    break;
+                }
+            }
+            if (status_func(PS_PROGRESS, offset))
+                user_aborted();
+            break;
 
-	case DEV_TIMEOUT:
-	    *(U32 *)tx_hdr = offset;
-	    z_send_hex_header(ZRPOS);
-	    break;
+        case DEV_TIMEOUT:
+            *(U32 *)tx_hdr = offset;
+            z_send_hex_header(ZRPOS);
+            break;
 
-	case ZCAN:
-	    pdll_aborted = A_REMOTE;
-	    ret_val = bail = 1;
-	    break;
+        case ZCAN:
+            pdll_aborted = A_REMOTE;
+            ret_val = bail = 1;
+            break;
 
-	case GOTERROR:
-	    break;
+        case GOTERROR:
+            break;
 
-	case ZNAK:
-	    *(U32 *)tx_hdr = offset;
-	    z_send_hex_header(ZRPOS);
-	    break;
+        case ZNAK:
+            *(U32 *)tx_hdr = offset;
+            z_send_hex_header(ZRPOS);
+            break;
 
-	default:
-	    if (p_cfg->status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
-		user_aborted();
-	    break;
-	}
+        default:
+            if (status_func(PS_Z_UNEXPECTED_HEADER, outheader(c), *(U32 *)rx_hdr))
+                user_aborted();
+            break;
+        }
     }
-    if (p_cfg->close_func(&path,
-			   length,
-			   date,
-			   retransmits,
-			   pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
-			   offset))
-	user_aborted();
+    if (p_cfg->callbackp_close_func(&path,
+                           length,
+                           date,
+                           retransmits,
+                           pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
+                           offset))
+        user_aborted();
     return(ret_val);
 }
 
 VOID
 #ifdef CK_ANSIC
-rz(void) 
+rz(void)
 #else
 rz()
 #endif

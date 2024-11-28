@@ -27,7 +27,7 @@
  */
 
 /* General communication library. Calls for apropriate inline */
-/* functions depending on communications type */ 
+/* functions depending on communications type */
 
 #include <stdio.h>
 
@@ -35,6 +35,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_omalloc.h"
 #include "pdll_dev.h"
 
@@ -116,9 +117,9 @@ VOID dev_open(void) {
     dev_ready = 1;
 }
 
-U32 
+U32
 #ifdef CK_ANSIC
-dev_connect(void) 
+dev_connect(void)
 #else
 dev_connect()
 #endif
@@ -136,7 +137,7 @@ dev_connect()
   case DEV_TYPE_ASYNC:
     /* ASYNC can't connect this way */
     return(0);
-    
+
 #ifdef OS2
 #ifndef NT
    case DEV_TYPE_PIPE:
@@ -159,15 +160,15 @@ dev_connect()
   }
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_close(void) 
+dev_close(void)
 #else
 dev_close()
 #endif
 {
   APIRET rc=0;
-  
+
   if (dev_opened) {
     switch (dev_type) {
     case DEV_TYPE_EXE_IO:
@@ -205,16 +206,16 @@ dev_close()
 }
 
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_purge_inbuf(void) 
+dev_purge_inbuf(void)
 #else
 dev_purge_infbuf()
 #endif
 {
 
   while (1) {
-    inbuf_idx = 0;		/* Abandon the stuff in buffer */
+    inbuf_idx = 0;              /* Abandon the stuff in buffer */
     inbuf_len = 0;
     if (!dev_incoming())
       break;
@@ -222,22 +223,22 @@ dev_purge_infbuf()
   }
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_purge_outbuf(void) 
+dev_purge_outbuf(void)
 #else
 dev_purge_outbuf()
 #endif
-{ 
+{
     /* This is done by function because */
     /* we are accessing a static variable */
 
     outbuf_idx = 0;
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_flush_outbuf(void) 
+dev_flush_outbuf(void)
 #else
 dev_flush_outbuf()
 #endif
@@ -258,7 +259,7 @@ dev_flush_outbuf()
     pipe_flush_outbuf();
     break;
 #endif
-#endif 
+#endif
 
   case DEV_TYPE_SOCKET:
   default:
@@ -269,12 +270,12 @@ dev_flush_outbuf()
 }
 
 #ifdef XYZ_DLL
-VOID 
+VOID
 dev_get_cfg(DEV_CFG *dev_cfg) {
 
   static APIRET rc=0;
   static U32 LengthInOut;
-  
+
   if (dev_type == DEV_TYPE_ASYNC) {
 #ifdef NT
 #ifdef COMMENT
@@ -282,7 +283,7 @@ dev_get_cfg(DEV_CFG *dev_cfg) {
         DCB dcb ;
         if ( !GetCommState( dev_handle, &dcb ) )
            rc = GetLastError() ;
-        else 
+        else
         {
 
         }
@@ -290,23 +291,23 @@ dev_get_cfg(DEV_CFG *dev_cfg) {
 #endif
 #else /* NT */
     LengthInOut = sizeof(DEV_CFG);
-    rc = DosDevIOCtl(dev_handle,		/* FileHandle */
-		     IOCTL_ASYNC, 		/* Category */
-		     ASYNC_GETDCBINFO,		/* Function */
-		     NULL,			/* ParmList */
-		     0L,				/* ParmLengthMax */
-		     NULL,			/* ParmLengthInOut */
-		     dev_cfg,			/* DataArea */
-		     sizeof(DEV_CFG),		/* DataLengthMax */
-		     &LengthInOut);		/* DataLengthInOut */
-#endif 
+    rc = DosDevIOCtl(dev_handle,                /* FileHandle */
+                     IOCTL_ASYNC,               /* Category */
+                     ASYNC_GETDCBINFO,          /* Function */
+                     NULL,                      /* ParmList */
+                     0L,                                /* ParmLengthMax */
+                     NULL,                      /* ParmLengthInOut */
+                     dev_cfg,                   /* DataArea */
+                     sizeof(DEV_CFG),           /* DataLengthMax */
+                     &LengthInOut);             /* DataLengthInOut */
+#endif
     if (rc)
       p_error(P_ERROR_DOSDEVIOCTL, rc,
-		MODULE_DEV, __LINE__, (intptr_t)dev_path);
+                MODULE_DEV, __LINE__, (intptr_t)dev_path);
   }
-}    
+}
 
-VOID 
+VOID
 dev_set_cfg(DEV_CFG *dev_cfg) {
 
   static APIRET rc=0;
@@ -319,7 +320,7 @@ dev_set_cfg(DEV_CFG *dev_cfg) {
         DCB dcb ;
         if ( !SetCommState( dev_handle, &dcb ) )
            rc = GetLastError() ;
-        else 
+        else
         {
 
         }
@@ -327,28 +328,28 @@ dev_set_cfg(DEV_CFG *dev_cfg) {
 #endif
 #else /* NT */
     LengthInOut = sizeof(DEV_CFG);
-    rc = DosDevIOCtl(dev_handle,		/* FileHandle */
-		     IOCTL_ASYNC, 		/* Category */
-		     ASYNC_SETDCBINFO,		/* Function */
-		     dev_cfg,			/* ParmList */
-		     sizeof(DEV_CFG),		/* ParmLengthMax */
-		     &LengthInOut,		/* ParmLengthInOut */
-		     NULL,			/* DataArea */
-		     0,				/* DataLengthMax */
-		     NULL);			/* DataLengthInOut */
+    rc = DosDevIOCtl(dev_handle,                /* FileHandle */
+                     IOCTL_ASYNC,               /* Category */
+                     ASYNC_SETDCBINFO,          /* Function */
+                     dev_cfg,                   /* ParmList */
+                     sizeof(DEV_CFG),           /* ParmLengthMax */
+                     &LengthInOut,              /* ParmLengthInOut */
+                     NULL,                      /* DataArea */
+                     0,                         /* DataLengthMax */
+                     NULL);                     /* DataLengthInOut */
 #endif
     if (rc)
       p_error(P_ERROR_DOSDEVIOCTL, rc,
-		MODULE_DEV, __LINE__, (intptr_t)dev_path);
+                MODULE_DEV, __LINE__, (intptr_t)dev_path);
   }
 }
 
-VOID 
+VOID
 dev_chg_cfg(U16 write_timeout,
-		 U16 read_timeout,
-		 U8 flags1,
-		 U8 flags2,
-		 U8 flags3) {
+                 U16 read_timeout,
+                 U8 flags1,
+                 U8 flags2,
+                 U8 flags3) {
 
   DEV_CFG dev_cfg;
 
@@ -364,9 +365,9 @@ dev_chg_cfg(U16 write_timeout,
 }
 #endif /* XYZ_DLL */
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_set_break_on(void) 
+dev_set_break_on(void)
 #else
 dev_set_break_on()
 #endif
@@ -395,9 +396,9 @@ dev_set_break_on()
   }
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_set_break_off(void) 
+dev_set_break_off(void)
 #else
 dev_set_break_off()
 #endif
@@ -427,9 +428,9 @@ dev_set_break_off()
   }
 }
 
-VOID 
+VOID
 #ifdef CK_ANSIC
-dev_send_tn_cmd(U8 cmd, U8 opt) 
+dev_send_tn_cmd(U8 cmd, U8 opt)
 #else
 dev_send_tn_cmd() U8 cmd; U8 opt;
 #endif
@@ -438,7 +439,7 @@ dev_send_tn_cmd() U8 cmd; U8 opt;
   U8 buf[5];
   U32 i;
 
-  buf[0] = 0xFF;		/* IAC */
+  buf[0] = 0xFF;                /* IAC */
   buf[1] = cmd;
   buf[2] = opt;
   buf[3] = '\0';

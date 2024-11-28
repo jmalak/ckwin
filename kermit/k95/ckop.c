@@ -37,12 +37,12 @@
 
 #include "p_type.h"
 #include "p.h"
+#include "p_callbk.h"
 #ifdef XYZ_DLL
 #define XYZ_DLL_CLIENT
 #include "ckop.h"
 #endif /* XYZ_DLL */
 #include "p_global.h"
-#include "p_callbk.h"
 #include "p_common.h"
 
 extern int rpackets, spackets, spktl, rpktl, what ;
@@ -267,6 +267,67 @@ available_func( U32 * available )
     }
 }
 
+static va_status_func_callback callback_va_status_func;
+static r_open_func_callback callback_r_open_func;
+static s_open_func_callback callback_s_open_func;
+static close_func_callback callback_close_func;
+static seek_func_callback callback_seek_func;
+static read_func_callback callback_read_func;
+static write_func_callback callback_write_func;
+static exe_out_func_callback callback_out_func;
+static exe_in_func_callback callback_in_func;
+static exe_break_func_callback callback_break_func;
+static exe_available_func_callback callback_available_func;
+static exe_pushback_func_callback callback_pushback_func;
+
+static U32 CKXYZAPI callback_va_status_func(U32 type, va_list va)
+{
+    return( va_status_func(type, va) );
+}
+static U32 CKXYZAPI callback_r_open_func(U8 **path, U32 length, U32 date, U32 mode, U32 f_left, U32 b_left, U8 zconv, U8 zmanag, U8 ztrans, U32 *offset)
+{
+    return( r_open_func(path, length, date, mode, f_left, b_left, zconv, zmanag, ztrans, offset) );
+}
+static U32 CKXYZAPI callback_s_open_func(U8 **path, U32 *length, U32 *date, U32 *mode, U32 *f_left, U32 *b_left, U8 *zconv, U8 *zmanag, U8 *ztrans)
+{
+    return( s_open_func(path, length, date, mode, f_left, b_left, zconv, zmanag, ztrans) );
+}
+static U32 CKXYZAPI callback_close_func(U8 **path, U32 length, U32 date, U32 retransmits, BOOLEAN successful, U32 offset)
+{
+    return( close_func(path, length, date, retransmits, successful, offset) );
+}
+static U32 CKXYZAPI callback_seek_func(U32 pos)
+{
+    return( seek_func(pos) );
+}
+static U32 CKXYZAPI callback_read_func(U8 *buf, U32 bytes_wanted, U32 *bytes_got)
+{
+    return( read_func(buf, bytes_wanted, bytes_got) );
+}
+static U32 CKXYZAPI callback_write_func(U8 *buf, U32 bytes)
+{
+    return( write_func(buf, bytes) );
+}
+static U32 CKXYZAPI callback_out_func(U8 * buf, U32 len, U32 * bytes_written)
+{
+    return( out_func(buf, len, bytes_written) );
+}
+static U32 CKXYZAPI callback_in_func(U8 * buf, U32 len, U32 * bytes_received)
+{
+    return( in_func(buf, len, bytes_received) );
+}
+static U32 CKXYZAPI callback_break_func(U8 on)
+{
+    return( break_func(on) );
+}
+static U32 CKXYZAPI callback_available_func(U32 * available)
+{
+    return( available_func(available) );
+}
+static U32 CKXYZAPI callback_pushback_func(U8 * buf, U32 len)
+{
+    return( pushback_func(buf, len) );
+}
 
 int
 pxyz(int sstate) {
@@ -481,8 +542,8 @@ pxyz(int sstate) {
         what = W_SEND ;
 
         if ( nfils < 0 ) {
-			if (!cmarg[0])
-				return -1;
+                        if (!cmarg[0])
+                                return -1;
 
 #ifdef PIPESEND
             if ( pipesend ) {
@@ -538,18 +599,18 @@ pxyz(int sstate) {
         files_left = tl->cnt ;
         bytes_left = tl->size ;
     }
-    p_cfg.status_func = status_func;
-    p_cfg.r_open_func = r_open_func;
-    p_cfg.s_open_func = s_open_func;
-    p_cfg.close_func = close_func;
-    p_cfg.seek_func = seek_func;
-    p_cfg.read_func = read_func;
-    p_cfg.write_func = write_func;
-    p_cfg.exe_out_func = out_func;
-    p_cfg.exe_in_func = in_func;
-    p_cfg.exe_break_func = break_func;
-    p_cfg.exe_available_func = available_func;
-    p_cfg.exe_pushback_func = pushback_func;
+    p_cfg.callbackp_va_status_func = callback_va_status_func;
+    p_cfg.callbackp_r_open_func = callback_r_open_func;
+    p_cfg.callbackp_s_open_func = callback_s_open_func;
+    p_cfg.callbackp_close_func = callback_close_func;
+    p_cfg.callbackp_seek_func = callback_seek_func;
+    p_cfg.callbackp_read_func = callback_read_func;
+    p_cfg.callbackp_write_func = callback_write_func;
+    p_cfg.callbackp_exe_out_func = callback_out_func;
+    p_cfg.callbackp_exe_in_func = callback_in_func;
+    p_cfg.callbackp_exe_break_func = callback_break_func;
+    p_cfg.callbackp_exe_available_func = callback_available_func;
+    p_cfg.callbackp_exe_pushback_func = callback_pushback_func;
 
     /* Transaction Log Begin */
     ztime(&tp);

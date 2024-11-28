@@ -35,6 +35,7 @@
 
 #include "pdll_os2incl.h"
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_common.h"
 #include "pdll_crc.h"
 #include "pdll_defs.h"
@@ -74,18 +75,18 @@ ryx_blk_size()
 
     case EOT:
       blk[0] = EOT;
-      dev_putch_buf(ACK);		/* Also ymodem-g acknowledges */
+      dev_putch_buf(ACK);               /* Also ymodem-g acknowledges */
       dev_flush_outbuf();
       return;
 
     case CAN:
       can_cnt++;
       if (can_cnt == 5) {
-	pdll_aborted = A_REMOTE;
-	return;
+        pdll_aborted = A_REMOTE;
+        return;
       }
       break;
-      
+
     case DEV_TIMEOUT:
       break;
 
@@ -95,8 +96,8 @@ ryx_blk_size()
     }
     time(&t_now);
     if (t_now - t_started >= 5) {
-      if (p_cfg->status_func(PS_TIMEOUT, 5))
-	user_aborted();
+      if (status_func(PS_TIMEOUT, 5))
+        user_aborted();
       return;
     }
   }
@@ -104,14 +105,14 @@ ryx_blk_size()
 
 VOID
 #ifdef CK_ANSIC
-ryx_handshake(void) 
+ryx_handshake(void)
 #else
 ryx_handshake()
 #endif
 {
   U8 ch_to_send;
   U32 cnt = 0;
-  
+
   switch (protocol_type) {
   case PROTOCOL_G:
     ch_to_send = 'G';
@@ -120,20 +121,20 @@ ryx_handshake()
   case PROTOCOL_X:
     if (use_1k_blocks) {
       if (use_alternative_checking)
-	ch_to_send = NAK;
+        ch_to_send = NAK;
       else
-	ch_to_send = 'C';
+        ch_to_send = 'C';
     } else {
       if (use_alternative_checking)
-	ch_to_send = 'C';
+        ch_to_send = 'C';
       else
-	ch_to_send = NAK;
+        ch_to_send = NAK;
     }
     break;
 
 
   case PROTOCOL_Y:
-  default:			/* Just to shut up the compiler  */
+  default:                      /* Just to shut up the compiler  */
     if (use_alternative_checking)
       ch_to_send = NAK;
     else
@@ -150,32 +151,32 @@ ryx_handshake()
     if (blk[0] != '\0') {
       switch (ch_to_send) {
       case NAK:
-	if (chk_data_len != 1) {	/* Prevents us from repeating this */
-	  if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CHECKSUM))
-	    user_aborted();
-	}
-	chk_data_len = 1;
-	break;
+        if (chk_data_len != 1) {        /* Prevents us from repeating this */
+          if (status_func(PS_CHECKING_METHOD, CHECKING_CHECKSUM))
+            user_aborted();
+        }
+        chk_data_len = 1;
+        break;
 
       case 'C':
       case 'G':
-	if (chk_data_len != 2) {	/* Prevents us from repeating this */
-	  if (p_cfg->status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
-	    user_aborted();
-	}
-	chk_data_len = 2;
-	break;
+        if (chk_data_len != 2) {        /* Prevents us from repeating this */
+          if (status_func(PS_CHECKING_METHOD, CHECKING_CRC16))
+            user_aborted();
+        }
+        chk_data_len = 2;
+        break;
       }
       return;
     }
     if (++cnt == 4 && protocol_type != PROTOCOL_G && ch_to_send == 'C') {
-      if (p_cfg->status_func(PS_XY_FALLBACK_TO_CHECKSUM))
-	user_aborted();
+      if (status_func(PS_XY_FALLBACK_TO_CHECKSUM))
+        user_aborted();
       ch_to_send = NAK;
     }
     if (cnt == 12) {
-      if (p_cfg->status_func(PS_TIMEOUT, 60))
-	user_aborted();
+      if (status_func(PS_TIMEOUT, 60))
+        user_aborted();
       pdll_aborted = A_MISC;
       return;
     }
@@ -184,29 +185,29 @@ ryx_handshake()
 
 VOID
 #ifdef CK_ANSIC
-ryx_open_file(void) 
+ryx_open_file(void)
 #else
 ryx_open_file()
 #endif
 {
-  if (p_cfg->r_open_func(&path, length, date, mode,
-			 pdll_files_left, pdll_bytes_left,
-			 0, 0, 0, NULL))
+  if (p_cfg->callbackp_r_open_func(&path, length, date, mode,
+                         pdll_files_left, pdll_bytes_left,
+                         0, 0, 0, NULL))
     user_aborted();
-  if (path == NULL)		/* File not specified on command-line */
-				/* or something like that */
+  if (path == NULL)             /* File not specified on command-line */
+                                /* or something like that */
     user_aborted();
   offset = 0;
 }
 
-U32 
+U32
 #ifdef CK_ANSIC
-ryx_block(void) 
+ryx_block(void)
 #else
 ryx_block()
 #endif /* CK_ANSIC */
 {
-  
+
   U16 checksum;
   U16 block_ok;
   U16 ch;
@@ -218,7 +219,7 @@ ryx_block()
   chk_data_idx = 3 + blk_size;
   blk_len = 3 + blk_size + chk_data_len;
 
-  if (p_cfg->status_func(PS_PACKET_LENGTH, blk_len))
+  if (status_func(PS_PACKET_LENGTH, blk_len))
       user_aborted();
 
   while (1) {
@@ -228,86 +229,86 @@ ryx_block()
       ch = dev_getch_buf();
       switch (ch) {
       case DEV_TIMEOUT:
-	time(&t_now);
-	if (t_now - t_started >= 5) {
-	  if (p_cfg->status_func(PS_TIMEOUT, 5))
-	    user_aborted();
-	  if (protocol_type == PROTOCOL_G) {
-	    if (p_cfg->status_func(PS_G_ABORTED))
-	      user_aborted();
-	    pdll_aborted = A_MISC;
-	    cancel();
-	  } else {
-	    dev_purge_inbuf();
-	    dev_putch_buf(NAK);
-	    dev_flush_outbuf();
-	  }
-	  return(1);		/* Let's try again */
-	}
-	break;
+        time(&t_now);
+        if (t_now - t_started >= 5) {
+          if (status_func(PS_TIMEOUT, 5))
+            user_aborted();
+          if (protocol_type == PROTOCOL_G) {
+            if (status_func(PS_G_ABORTED))
+              user_aborted();
+            pdll_aborted = A_MISC;
+            cancel();
+          } else {
+            dev_purge_inbuf();
+            dev_putch_buf(NAK);
+            dev_flush_outbuf();
+          }
+          return(1);            /* Let's try again */
+        }
+        break;
 
       default:
-	blk[i++] = ch;
-	break;
+        blk[i++] = ch;
+        break;
       }
     }
     block_ok = 1;
     if (block_ok) {
       if (blk[1] != expected_blk_num[0] &&
-	  blk[2] != expected_blk_num[1]) {
-	if (p_cfg->status_func(PS_XYG_BLK_NUM_MISMATCH,
-			       blk[1],
-			       blk[2],
-			       expected_blk_num[0],
-			       expected_blk_num[1]))
-	    user_aborted();
-	block_ok = 0;
+          blk[2] != expected_blk_num[1]) {
+        if (status_func(PS_XYG_BLK_NUM_MISMATCH,
+                               blk[1],
+                               blk[2],
+                               expected_blk_num[0],
+                               expected_blk_num[1]))
+            user_aborted();
+        block_ok = 0;
       }
     }
     if (block_ok) {
       checksum = 0;
       switch (chk_data_len) {
-      case 1:			/* 8-bit checksum */
-	for (i = 3; i < chk_data_idx; i++)
-	  checksum = (checksum + blk[i]) & 0xFF;
-	if (blk[chk_data_idx] != checksum) {
-	  if (p_cfg->status_func(PS_CHECK_FAILED, CHECKING_CHECKSUM))
-	    user_aborted();
-	  block_ok = 0;
-	}
-	break;
-	
-      case 2:			/* 16-bit CRC */
-	for (i = 3; i < chk_data_idx; i++)
-	  checksum = updcrc16(blk[i], checksum);
-	if (blk[chk_data_idx] != ((checksum >> 8) & 0xFF) ||
-	    blk[chk_data_idx + 1] != (checksum & 0xFF)) {
-	  if (p_cfg->status_func(PS_CHECK_FAILED, CHECKING_CRC16))
-	    user_aborted();
-	  block_ok = 0;
-	}
-	break;
+      case 1:                   /* 8-bit checksum */
+        for (i = 3; i < chk_data_idx; i++)
+          checksum = (checksum + blk[i]) & 0xFF;
+        if (blk[chk_data_idx] != checksum) {
+          if (status_func(PS_CHECK_FAILED, CHECKING_CHECKSUM))
+            user_aborted();
+          block_ok = 0;
+        }
+        break;
+
+      case 2:                   /* 16-bit CRC */
+        for (i = 3; i < chk_data_idx; i++)
+          checksum = updcrc16(blk[i], checksum);
+        if (blk[chk_data_idx] != ((checksum >> 8) & 0xFF) ||
+            blk[chk_data_idx + 1] != (checksum & 0xFF)) {
+          if (status_func(PS_CHECK_FAILED, CHECKING_CRC16))
+            user_aborted();
+          block_ok = 0;
+        }
+        break;
       }
     }
     if (block_ok) {
       if (protocol_type != PROTOCOL_G) {
-	dev_putch_buf(ACK);
-	dev_flush_outbuf();
+        dev_putch_buf(ACK);
+        dev_flush_outbuf();
       }
       expected_blk_num[0]++;
       expected_blk_num[1]--;
       break;
     } else {
       if (protocol_type == PROTOCOL_G) {
-	if (p_cfg->status_func(PS_G_ABORTED))
-	  user_aborted();
-	pdll_aborted = A_MISC;
-	cancel();
+        if (status_func(PS_G_ABORTED))
+          user_aborted();
+        pdll_aborted = A_MISC;
+        cancel();
       } else {
-	retransmits++;
-	dev_purge_inbuf();
-	dev_putch_buf(NAK);
-	dev_flush_outbuf();
+        retransmits++;
+        dev_purge_inbuf();
+        dev_putch_buf(NAK);
+        dev_flush_outbuf();
       }
       return(1);
     }
@@ -316,9 +317,9 @@ ryx_block()
 }
 
 
-U32 
+U32
 #ifdef CK_ANSIC
-ryx_file(void) 
+ryx_file(void)
 #else
 ryx_file()
 #endif
@@ -327,7 +328,7 @@ ryx_file()
   U32 cnt;
   U32 bytes_to_write;
 
-  if (protocol_type != PROTOCOL_X) {	/* Let's get the file information */
+  if (protocol_type != PROTOCOL_X) {    /* Let's get the file information */
     ryx_handshake();
     if (pdll_aborted)
       return(1);
@@ -335,75 +336,75 @@ ryx_file()
     expected_blk_num[1] = 255;
     while (ryx_block()) {
       if (pdll_aborted)
-	return(1); /* We can use return because no file has been opened yet */
+        return(1); /* We can use return because no file has been opened yet */
     }
     process_file_info();
-    if (path == NULL) {	 	/* Null header received, indicating */
-				/* end of batch transfer */
+    if (path == NULL) {         /* Null header received, indicating */
+                                /* end of batch transfer */
       return(1);
     }
   } else {
     expected_blk_num[0] = 1;
     expected_blk_num[1] = 254;
-    path = NULL;		/* We'll find the path information */
-				/* from cfg->te in ryx_open_file() */
+    path = NULL;                /* We'll find the path information */
+                                /* from cfg->te in ryx_open_file() */
   }
   offset = 0;
   ryx_open_file();
   if (!pdll_aborted) {
     ryx_handshake();
-    if (p_cfg->status_func(PS_PROGRESS, offset))
+    if (status_func(PS_PROGRESS, offset))
       user_aborted();
 
     while (1) {
-      if (!ryx_block()) {	/* If block received OK */
-	if (length != -1 && offset + blk_size > length)   /* If we know the */
-							  /* length of the */
-							  /* file and we are */
-							  /* at the end */
-	  bytes_to_write = length - offset;
-	else
-	  bytes_to_write = blk_size;
-	offset += bytes_to_write;
-	if (p_cfg->write_func(&blk[3], bytes_to_write))
-	  user_aborted();
+      if (!ryx_block()) {       /* If block received OK */
+        if (length != -1 && offset + blk_size > length)   /* If we know the */
+                                                          /* length of the */
+                                                          /* file and we are */
+                                                          /* at the end */
+          bytes_to_write = length - offset;
+        else
+          bytes_to_write = blk_size;
+        offset += bytes_to_write;
+        if (p_cfg->callbackp_write_func(&blk[3], bytes_to_write))
+          user_aborted();
       } else {
-	if (pdll_aborted)
-	  break;
+        if (pdll_aborted)
+          break;
       }
       cnt = 0;
       while (1) {
-	if (p_cfg->status_func(PS_PROGRESS, offset))
-	  user_aborted();
+        if (status_func(PS_PROGRESS, offset))
+          user_aborted();
 
-	ryx_blk_size();
-	if (blk[0] != '\0' || pdll_aborted)
-	  break;
-	cnt++;
-	if (cnt == 12) {
-	  if (p_cfg->status_func(PS_TIMEOUT, 60))
-	    user_aborted();
+        ryx_blk_size();
+        if (blk[0] != '\0' || pdll_aborted)
+          break;
+        cnt++;
+        if (cnt == 12) {
+          if (status_func(PS_TIMEOUT, 60))
+            user_aborted();
 
-	  pdll_aborted = A_MISC;
-	  break;
-	}
-	dev_putch_buf(NAK);
-	dev_flush_outbuf();
+          pdll_aborted = A_MISC;
+          break;
+        }
+        dev_putch_buf(NAK);
+        dev_flush_outbuf();
       }
-	if (p_cfg->status_func(PS_PROGRESS, offset))
-	  user_aborted();
+        if (status_func(PS_PROGRESS, offset))
+          user_aborted();
       if (blk[0] == EOT)
-	break;
+        break;
       if (pdll_aborted)
-	break;
+        break;
     }
   }
-  if (p_cfg->close_func(&path,
-			length,
-			date,
-			retransmits,
-			pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
-			offset))
+  if (p_cfg->callbackp_close_func(&path,
+                        length,
+                        date,
+                        retransmits,
+                        pdll_aborted ? FILE_FAILED : FILE_SUCCESSFUL,
+                        offset))
     user_aborted();
   if (pdll_aborted || protocol_type == PROTOCOL_X)
     return(1);
@@ -413,13 +414,13 @@ ryx_file()
 
 VOID
 #ifdef CK_ANSIC
-ryx(void) 
+ryx(void)
 #else
 ryx()
 #endif
 {
 
-  timeouts_per_call = 1;	/* We'll just wait 3 tenths of a second */
+  timeouts_per_call = 1;        /* We'll just wait 3 tenths of a second */
   pdll_malloc((void **)&blk, 3 + 1024 + 2, MODULE_RYX, __LINE__);
   while (!ryx_file())
     ;

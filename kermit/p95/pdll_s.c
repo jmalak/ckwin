@@ -37,11 +37,12 @@
 #include "ckcdeb.h"
 
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_global.h"
 
-U32 
+U32
 #ifdef CK_ANSIC
-s_make_file_header(U8 *buf) 
+s_make_file_header(U8 *buf)
 #else
 s_make_file_header() U8 *buf ;
 #endif
@@ -64,7 +65,7 @@ s_make_file_header() U8 *buf ;
     if (date == -1)
       time(&date);
     buf_idx += sprintf((U8 *)&buf[buf_idx], "%lu %lo %lo 0 %ld %ld",
-		       length, date, mode, pdll_files_left, pdll_bytes_left);
+                       length, date, mode, pdll_files_left, pdll_bytes_left);
   }
   buf_idx++; /* include the null in the result */
   return(buf_idx);

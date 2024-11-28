@@ -44,20 +44,20 @@ _Inline U32 exe_incoming(void)
 {
    U32 available ;
 
-    if (p_cfg->exe_available_func(&available))
-	return(0);
-    else 
-	return(available);
+    if (p_cfg->callbackp_exe_available_func(&available))
+        return(0);
+    else
+        return(available);
 }
 
 _Inline U32 exe_connected(void) {
 
     U32 available ;
 
-    if ( p_cfg->exe_available_func( &available ) )
-	return(1);
+    if ( p_cfg->callbackp_exe_available_func( &available ) )
+        return(1);
     else
-	return(0);
+        return(0);
 }
 
 _PROTOTYP( VOID exe_getch_buf,(void));

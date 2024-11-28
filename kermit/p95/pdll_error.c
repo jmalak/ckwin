@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include "p_type.h"
+#include "p_callbk.h"
 #include "pdll_global.h"
 #include "pdll_main.h"
 #include "pdll_common.h"
@@ -49,8 +50,8 @@ p_error(U32 num,
          U32 error_code,
          U32 module,
          U32 line,
-         U32 opt_arg) 
-#else 
+         U32 opt_arg)
+#else
 p_error() U32 num;
      U32 error_code;
      U32 module;
@@ -58,14 +59,14 @@ p_error() U32 num;
      U32 opt_arg);
 #endif
 {
-  if (p_error_visited)		/* Yeah right, we are already closing down.. */
-				/* We'll just ignore all errors after the */
-				/* first one... */
+  if (p_error_visited)          /* Yeah right, we are already closing down.. */
+                                /* We'll just ignore all errors after the */
+                                /* first one... */
     return;
   else
     p_error_visited = 1;
-  if (p_cfg->status_func(PS_ERROR, num, error_code,
-			 module, line, opt_arg))
+  if (status_func(PS_ERROR, num, error_code,
+                         module, line, opt_arg))
     user_aborted();
   longjmp(p_jmp_buf, 1);
 }

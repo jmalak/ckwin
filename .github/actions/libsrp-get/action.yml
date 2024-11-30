@@ -1,0 +1,28 @@
+name: libsrp-get
+description: 'Download libsrp'
+#
+# Expected filename: http://srp.stanford.edu/source/srp-2.1.2.tar.gz
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and extract
+      run: |
+        curl -LsS -o srp-2.1.2.tar.gz http://srp.stanford.edu/source/srp-2.1.2.tar.gz
+        7z x srp-2.1.2.tar.gz
+        7z x srp-2.1.2.tar
+        rm -f srp-2.1.2.tar srp-2.1.2.tar.gz
+        echo "content of srp-2.1.2"
+        ls -l srp-2.1.2
+      shell: bash       

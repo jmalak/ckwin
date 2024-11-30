@@ -1,0 +1,30 @@
+name: nasm-get
+description: 'Download and extract nasm'
+#
+# NASM: https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p tools/nasm
+      shell: bash
+    - name: download and unpack
+      run: |
+        curl -LsS -o nasm.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+        7z x nasm.zip -otools
+        mv tools/nasm-2.15.05 tools/nasm
+        rm -f nasm.zip
+        echo "content of tools/nasm"
+        ls -l tools/nasm
+      shell: bash       

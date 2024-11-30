@@ -1,0 +1,38 @@
+name: info-zip-get
+description: 'Download info-zip'
+#
+# INFOZIP_FTP: ftp://ftp.info-zip.org/pub/infozip/
+#   ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip
+#   ftp://ftp.info-zip.org/pub/infozip/os2/unz600.exe
+#
+# old: INFOZIP_FTP: https://ftp.zx.net.nz/pub/archive/ftp.info-zip.org/pub/infozip/
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and extract
+      run: |
+        curl -LsS -o zip.zip ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip
+        curl -LsS -o unzip.zip ftp://ftp.info-zip.org/pub/infozip/os2/unz600.exe
+        7z x zip.zip -oinfo-zip
+        rm -f zip.zip
+        echo "content of info-zip"
+        ls -l info-zip
+        mkdir -p info-zip/os2
+        7z x unzip.zip -oinfo-zip/os2
+        rm -f unzip.zip
+        mv info-zip/os2/32-bit/* info-zip/os2
+        echo "content of info-zip/os2"
+        ls -l info-zip/os2
+      shell: bash       

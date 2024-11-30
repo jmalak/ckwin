@@ -1,0 +1,52 @@
+name: openssl-get
+description: 'Download openssl'
+#
+# Expected filename: https://github.com/openssl/openssl/releases/download/openssl-${{env.OPENSSL_VERSION}}/openssl-${{env.OPENSSL_VERSION}}.tar.gz
+#
+# OpenSSL 3.0 and 3.1 aren't properly compatible with Windows on ARM, so we've
+# got to use 3.2 or newer for that.
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and extract legacy
+      if: inputs.id == 'legacy'
+      run: |
+        curl -LsS -o openssl-1.0.1u.tar.gz https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz
+        7z x openssl-1.0.1u.tar.gz
+        7z x openssl-1.0.1u.tar -oopenssl
+        rm -f openssl-1.0.1u.tar openssl-1.0.1u.tar.gz
+        mv openssl/openssl-1.0.1u openssl/current
+        echo "content of openssl/current"
+        ls -l openssl/current
+      shell: bash
+    - name: download and extract current
+      if: inputs.id != 'legacy'
+      run: |
+        curl -LsS -o openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz https://github.com/openssl/openssl/releases/download/openssl-${{ env.CK_OPENSSL_VERSION }}/openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
+        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
+        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar -oopenssl
+        rm -f openssl-${{ env.CK_OPENSSL_VERSION }}.tar openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
+        mv openssl/openssl-${{ env.CK_OPENSSL_VERSION }} openssl/current
+        echo "content of openssl/current"
+        ls -l openssl/current
+      shell: bash       
+    - name: Install OpenSSL perl modules
+      if: runner.os == 'Windows'
+      run: cpan -i Text::Template
+      shell: cmd       
+    - name: Install OpenSSL perl modules
+      if: runner.os != 'Windows'
+      run: sudo cpan -i Text::Template
+      shell: bash       

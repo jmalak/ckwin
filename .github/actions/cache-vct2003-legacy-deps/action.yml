@@ -1,0 +1,150 @@
+name: cache-vct2003-legacy-deps
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Cache legacy dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\srp-2.1.2
+            ${{github.workspace}}\openssl\current
+            ${{github.workspace}}\kerberos\current
+            ${{github.workspace}}\libdes\des
+            ${{github.workspace}}\libdes\Release
+            ${{github.workspace}}\libdes\Debug
+            ${{github.workspace}}\superlat
+            ${{github.workspace}}\tools
+          key: libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.0-ver2
+          nocache: ${{ inputs.nocache }}
+      - name: Get nasm
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-get"
+      - name: Get kerberos
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/kerberos-get"
+        with:
+          id: 'legacy'
+      - name: Get openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+        with:
+          id: 'legacy'
+      - name: Get Legacy Dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          # Make sure everything is clean
+          #Remove-Item -Recurse -Force libdes\des
+          #Remove-Item -Recurse -Force libdes\Release
+          #Remove-Item -Recurse -Force libdes\Debug
+          #Remove-Item -Recurse -Force kerberos\current
+          #Remove-Item -Recurse -Force openssl\current
+          #Remove-Item -Recurse -Force srp-2.1.2
+          #Remove-Item -Recurse -Force tools
+          
+          # and libsrp
+          wget http://srp.stanford.edu/source/srp-2.1.2.tar.gz -outfile srp-2.1.2.tar.gz
+          7z x srp-2.1.2.tar.gz
+          7z x srp-2.1.2.tar
+          copy srp\* srp-2.1.2
+          
+          # SuperLAT Headers
+          mkdir superlat
+          cd superlat
+          wget https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip -outfile slatfio.zip
+          7z x slatfio.zip
+          mkdir include
+          copy TESTSVC\LATIOC.H include
+          copy TESTSVC\NETTYPES.H include
+          copy TESTSVC\NTDDTDI.H include
+          copy TESTSVC\PACKOFF.H include
+          copy TESTSVC\PACKON.H include
+          copy TESTSVC\TDI.H include
+          copy TESTSVC\TIHDR.H include
+          Remove-Item -Recurse -Force TESTSVC
+          Remove-Item -Recurse -Force CONN
+          del README.1ST
+          del slatfio.zip
+          cd ..
+        shell: powershell
+
+      - name: Build libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: libdes
+        run: |
+          Set PATH=${{ github.workspace }}\vct2003\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          set INCLUDE=${{ github.workspace }}\vct2003\include
+          set LIB=${{ github.workspace }}\vct2003\lib
+          set CKB_STATIC_CRT_NT=yes
+
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+
+          call mknt.bat
+        shell: cmd
+
+      - name: Build openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: openssl/current
+        run: |
+          Set PATH=${{ github.workspace }}\vct2003\bin;%PATH%
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          set INCLUDE=${{ github.workspace }}\vct2003\include
+          set LIB=${{ github.workspace }}\vct2003\lib;%LIB%
+          
+          Set PATH=%PATH%;${{github.workspace}}\tools\nasm
+          perl Configure VC-WIN32 enable-static-engine
+                   
+          call ms\do_ms.bat
+          
+          REM adjust the makefile to statically link
+          sed -i "s/\/MD /\/MT /g" ms\ntdll.mak
+          
+          nmake -f ms\ntdll.mak
+        shell: cmd
+
+      - name: Build libsrp
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        env:
+          ROOT: ${{ github.workspace }}
+        working-directory: srp-2.1.2
+        run: |
+          Set PATH=${{ github.workspace }}\vct2003\bin;%PATH%
+          set openssl_root_override=${{ github.workspace }}\openssl\current
+          set srp_root_override=${{ github.workspace }}\srp-2.1.2
+          
+          REM Don't want to pick up headers or libraries from Visual C++ 14.0
+          REM which is also on here - we only want it for cvtres.exe.
+          set INCLUDE=${{ github.workspace }}\vct2003\include
+          set LIB=${{ github.workspace }}\vct2003\lib
+          set CKB_STATIC_CRT_NT=yes
+
+          call ${{ github.workspace }}\setenv.bat
+
+          call mknt.bat
+        shell: cmd

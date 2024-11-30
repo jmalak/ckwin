@@ -1,0 +1,36 @@
+name: cache-vct2003-deps
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Cache VCT2003
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\vct2003
+            ${{github.workspace}}\tools\jom
+          key: vct2003+psdk2003sp1+jom
+          nocache: ${{ inputs.nocache }}
+      - name: Get jom
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
+      - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/vct2003-get"

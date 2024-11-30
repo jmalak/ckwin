@@ -1,0 +1,113 @@
+name: cache-psdk71-deps
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+      - name: Cache Optional Dependencies
+        uses: "./.github/actions/cache"
+        id: cache-deps
+        with:
+          path: |
+            ${{github.workspace}}\zlib\current
+            ${{github.workspace}}\openssl\current
+            ${{github.workspace}}\libssh\current
+            ${{github.workspace}}\libdes\des
+            ${{github.workspace}}\libdes\Release
+            ${{github.workspace}}\libdes\Debug
+            ${{github.workspace}}\tools
+          key: platform-sdk-71-optdepts-${{ inputs.arch }}+nasm+openssl-${{env.OPENSSL_VERSION}}+libdes+v3
+          nocache: ${{ inputs.nocache }}
+      - name: Get nasm
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/nasm-get"
+      - name: Get jom
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/jom-get"
+      - name: Get libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/libdes-get"
+      - name: Get openssl
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: "./.github/actions/openssl-get"
+
+      - name: Build openssl (ia64)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'ia64'
+        working-directory: openssl/current
+        run: |
+          SET PlatformToolset=100
+
+          call ${{ github.workspace }}\vc10.cmd /release /xp /${{ inputs.arch }}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+
+          perl Configure VC-WIN64I -D"_WIN32_WINNT=0x502"
+          
+          REM The perl configure script doesn't work quite right for cross-compiling to IA64
+          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:ia64/g" makefile
+          
+          nmake
+        shell: cmd
+
+      - name: Build openssl (x86-64)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'x64'
+        working-directory: openssl/current
+        run: |
+          SET PlatformToolset=100
+
+          call ${{ github.workspace }}\vc10.cmd /release /xp /${{ inputs.arch }}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\nasm
+          
+          perl Configure VC-WIN64A -D"_WIN32_WINNT=0x502"
+          
+          REM The perl configure script doesn't work quite right for cross-compiling to x64
+          REM it leaves the /machine flag off the link flags, so we'll just add it on ourselves.
+          sed -i "s/^LDFLAGS=\/nologo.*/& \/machine:x64/g" makefile
+          
+          nmake
+        shell: cmd
+
+      - name: Build openssl (x86)
+        if: steps.cache-deps.outputs.cache-hit != 'true' && inputs.arch == 'x86'
+        working-directory: openssl/current
+        run: |
+          SET PlatformToolset=100
+
+          call ${{ github.workspace }}\vc10.cmd /release /xp /${{ inputs.arch }}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\nasm
+          
+          perl Configure VC-WIN32 -D"_WIN32_WINNT=0x502"
+          nmake
+        shell: cmd
+
+      - name: Build libdes
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: libdes
+        run: |
+          SET PlatformToolset=100
+
+          call ${{ github.workspace }}\vc10.cmd /release /xp /${{inputs.arch}}
+          
+          set PATH=%PATH%;${{github.workspace}}\tools\jom
+          set MAKE=jom
+          
+          call mknt.bat
+        shell: cmd

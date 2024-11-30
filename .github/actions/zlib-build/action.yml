@@ -1,0 +1,31 @@
+name: zlib-build
+description: 'Build zlib'
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build zlib (x86/x86-64)
+      if: inputs.arch == 'x86' || inputs.arch == 'x64'
+      working-directory: zlib/current
+      run: |
+        cmake .
+        nmake -f win32\Makefile.msc
+      shell: cmd
+
+    - name: Build zlib (arm32/arm64)
+      if: inputs.arch == 'x64_arm' || inputs.arch == 'x64_arm64'
+      working-directory: zlib/current
+      run: |
+        cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+        nmake
+      shell: cmd

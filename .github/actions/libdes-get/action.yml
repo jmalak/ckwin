@@ -1,0 +1,30 @@
+name: libdes-get
+description: 'Download libdes'
+#
+# LIBDES: https://www.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/libraries/libdes/libdes.tar.gz
+#
+# For building k95crypt.dll - expected to be a .tar.gz file
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and extract
+      run: |
+        curl -LsS -o libdes.tar.gz https://www.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/libraries/libdes/libdes.tar.gz
+        7z x libdes.tar.gz
+        7z x libdes.tar -olibdes
+        rm -f libdes.tar libdes.tar.gz
+        echo "content of libdes/des"
+        ls -l libdes/des
+      shell: bash       

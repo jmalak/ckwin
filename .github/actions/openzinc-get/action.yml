@@ -1,0 +1,32 @@
+name: openzinc-get
+description: 'Download openzinc'
+#
+# OpenZinc is available from http://openzinc.com/Downloads/OZ1.zip
+# But we don't want to waste the resources of the generous OpenZinc developer,
+# so we grab it from a mirror
+# expected filename: https://ftp.zx.net.nz/pub/dev/openzinc/oz1/OZ1.zip
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p zinc
+      shell: bash
+    - name: download and extract
+      run: |
+        curl -LsS -o OZ1.zip https://ftp.zx.net.nz/pub/dev/openzinc/oz1/OZ1.zip
+        7z x OZ1.zip -ozinc
+        rm -f OZ1.zip
+        echo "content of zinc"
+        ls -l zinc
+      shell: bash       

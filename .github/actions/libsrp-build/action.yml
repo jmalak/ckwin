@@ -1,0 +1,45 @@
+name: libsrp-build
+description: 'Build libsrp'
+#
+# Expected filename: http://srp.stanford.edu/source/srp-2.1.2.tar.gz
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build libsrp
+      if: inputs.id == 'vct2003'
+      env:
+        ROOT: ${{ github.workspace }}
+      working-directory: ${{ github.workspace }}/srp-2.1.2
+      run: |
+        Set PATH=${{ github.workspace }}\vct2003\bin;%PATH%
+        set openssl_root_override=${{ github.workspace }}\openssl\current
+        set srp_root_override=${{ github.workspace }}\srp-2.1.2
+
+        REM Don't want to pick up headers or libraries from Visual C++ 14.0
+        REM which is also on here - we only want it for cvtres.exe.
+        set INCLUDE=${{ github.workspace }}\vct2003\include
+        set LIB=${{ github.workspace }}\vct2003\lib
+
+        call ${{ github.workspace }}\setenv.bat
+          
+        set CKB_STATIC_CRT_NT=yes
+
+        call mknt.bat
+      shell: cmd

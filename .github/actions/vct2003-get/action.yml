@@ -1,0 +1,30 @@
+name: vct2003-get
+description: 'Download vct2003'
+#
+# Expected filename: https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+#
+# Get Visual C++ 2003 Toolkit + Platform SDK 2003
+#
+inputs:
+  arch:
+    description: 'Architecture for download'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version for download'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and extract
+      run: |
+        curl -LsS -o X2003.7z https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+        7z x X2003.7z
+        mv "Microsoft Platform SDK 2003SP1" vct2003
+        rm -f X2003.7z vct2003/Bin/Cvtres.exe
+        echo "content of vct2003"
+        ls -l vct2003
+      shell: bash       

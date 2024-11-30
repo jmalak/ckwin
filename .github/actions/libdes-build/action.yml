@@ -1,0 +1,78 @@
+name: libdes-build
+description: 'Build libdes'
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  ver:
+    description: 'Version'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Build (${{ inputs.arch }})
+      if: inputs.id == 'latest'
+      working-directory: libdes
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+
+        call mknt.bat
+      shell: cmd
+    - name: Build (${{ inputs.arch }}, PSDK71)
+      if: inputs.id == 'psdk71'
+      working-directory: libdes
+      run: |
+        set PlatformToolset=100
+
+        call ${{ github.workspace }}\vc10.cmd /release /xp /${{ inputs.arch }}
+
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+
+        call mknt.bat
+      shell: cmd
+    - name: Build (x86, VCT2003)
+      if: inputs.id == 'vct2003' && inputs.arch == 'x86'
+      working-directory: libdes
+      run: |
+        Set PATH=${{ github.workspace }}\vct2003\bin;%PATH%
+          
+        REM Don't want to pick up headers or libraries from Visual C++ 14.0
+        REM which is also on here - we only want it for cvtres.exe.
+        set INCLUDE=${{ github.workspace }}\vct2003\include
+        set LIB=${{ github.workspace }}\vct2003\lib
+        set CKB_STATIC_CRT_NT=yes
+          
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+
+        call mknt.bat
+      shell: cmd
+
+    - name: Build (ia64, VCT2003)
+      if: inputs.id == 'vct2003' && inputs.arch == 'ia64'
+      working-directory: libdes
+      run: |
+        Set PATH=${{ github.workspace }}\vct2003\bin\win64;${{ github.workspace }}\vct2003\bin;%PATH%
+          
+        REM Don't want to pick up headers or libraries from Visual C++ 14.0
+        REM which is also on here - we only want it for cvtres.exe.
+        set INCLUDE=${{ github.workspace }}\vct2003\include
+        set LIB=${{ github.workspace }}\vct2003\lib\ia64
+        set CKB_STATIC_CRT_NT=yes
+          
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+
+        call mknt.bat
+      shell: cmd

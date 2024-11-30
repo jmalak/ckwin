@@ -1,0 +1,33 @@
+name: jom-get
+description: 'Download jom'
+#
+# JOM: https://download.qt.io/official_releases/jom/jom.zip
+#
+# Use JOM instead of nmake for parallel builds
+# Make tool for openssl builds. Jom works fine with OpenSSL 1.1.1 but is broken with 3.0.10.
+# If jom works ideally we use that as it results in shorter build times.
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p tools/jom
+      shell: bash
+    - name: download and extract
+      run: |
+        curl -LsS -o jom.zip https://download.qt.io/official_releases/jom/jom.zip
+        7z x jom.zip -otools/jom
+        rm -f jom.zip
+        echo "content of tools/jom"
+        ls -l tools/jom
+      shell: bash

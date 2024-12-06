@@ -993,6 +993,7 @@ jobs:
           ver: ${{matrix.ver}}
           id: ${{matrix.id}}
       - name: Load Open Zinc
+        if: matrix.os.id == 'nt' || matrix.os.id == 'os2'
         uses: "./.github/actions/load-openzinc"
         with:
           nocache: ${{vars.NOCACHE}}
@@ -1040,6 +1041,7 @@ jobs:
           call ${{steps.cfg.outputs.build2}}.bat
           call mk${{steps.cfg.outputs.dist}}.bat
         shell: cmd
+
       - name: Dialer Build Files Check
         if: matrix.os.id == 'nt'
         uses: "./.github/actions/files-check"
@@ -1048,7 +1050,7 @@ jobs:
           list: ${{steps.cfg.outputs.dialer-list}}
 
       - name: Prepare Artifacts
-        working-directory: ${{github.workspace}}\kermit\k95
+        working-directory: ${{ github.workspace }}\kermit\k95
         run: |
           if "${{matrix.os.id}}" == "nt" (
             move ${{steps.cfg.outputs.dist}} ${{github.workspace}}\ckwin
@@ -1207,7 +1209,7 @@ jobs:
             ${{github.workspace}}/libdes/Release
             ${{github.workspace}}/libdes/Debug
             ${{github.workspace}}/superlat
-          key: vs2003-${{matrix.arch.id}}-libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.5-ver2
+          key: vs${{matrix.arch.vsversion}}-${{matrix.arch.id}}-libdes+libsrp+openssl-1.0.1u+superlat+kfw-2.6.5-ver2
           nocache: ${{vars.NOCACHE}}
 
       - name: Get Legacy Dependencies

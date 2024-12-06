@@ -161,69 +161,54 @@ jobs:
           retention-days: 1
 
   ##############################################################################
-  # Build with Visual C++ 14.x (2015/2017/2019/2022)                           #
+  # Build with Visual C++ (2019/2022)                                          #
   ##############################################################################
   # This includes the latest compilers available (2022), plus the most recent
   # capable of still targeting Windows XP (2017). All support x86, x86-64, ARM32
   # and ARM64.
   Build-VisualCxx:
-    runs-on: windows-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs, Build-Wart]
     strategy:
       matrix:
+        vs:
+          #- id: 2017
+          #  image: ????
+          - id: 2019
+            image: windows-2019
+          - id: 2022
+            image: windows-2022
         arch:
-          - x86
-          - x64
-          - x64_arm
-          - x64_arm64
-        toolset:
-          # Note: the 14.0 toolset doesn't really work (just results in 14.4)
-          - 14.2
-          - 14.4
-        exclude:
-          # The last ARM32 redist was shipped for 14.0 (Visual C++ 2015), but
-          # newer versions of Visual C++ seem to be able to target it OK. For
-          # now just use 14.2 same as for x86 and x86-64.
-          - arch: x64_arm
-            toolset: 14.4
-          # No point in building ARM64 targets with anything but the latest as
-          # the latest hasn't dropped any windows support yet.
-          - arch: x64_arm64
-            toolset: 14.2
+          - id: x86
+          - id: x64
+          - id: x64_arm
+            # temporary setup Windows SDK version for 32-bit ARM to 10.0.22621.0
+            # latest SDK version 10.0.26100.0 doesn't contains 32-bit ARM files
+            sdk: 10.0.22621.0
+          - id: x64_arm64
+    runs-on: ${{ matrix.vs.image }}
+    name: Build-VisualCxx-${{ matrix.vs.id }} (${{ matrix.arch.id }})
 
     steps:
     - uses: actions/checkout@v4
     - name: Select env configuration
+      id: cfg
       run: |
-        if [[ "${{ matrix.arch }}" = "x64_arm" || "${{ matrix.arch }}" = "x64_arm64" ]]; then
-          echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_ARM_VERSION }}" >> "$GITHUB_ENV"
-          echo "CK_K4W_PATH=." >> "$GITHUB_ENV"
+        if [[ "${{ matrix.arch.id }}" = "x64_arm" || "${{ matrix.arch.id }}" = "x64_arm64" ]]; then
+          echo "openssl=${{ env.OPENSSL_ARM_VERSION }}" >> "$GITHUB_OUTPUT"
+          echo "k4w=." >> "$GITHUB_OUTPUT"
         else
-          echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_VERSION }}" >> "$GITHUB_ENV"
-          echo "CK_K4W_PATH=kerberos\current\Kerberos" >> "$GITHUB_ENV"
+          echo "openssl=${{ env.OPENSSL_VERSION }}" >> "$GITHUB_OUTPUT"
+          echo "k4w=kerberos\current\Kerberos" >> "$GITHUB_OUTPUT"
         fi
       shell: bash
-    # temporary setup Windows SDK version for 32-bit ARM to 10.0.22621.0 because
-    # latest SDK version 10.0.26100.0 doesn't contains 32-bit ARM files
     - name: Enable Developer Command Prompt
-      if: matrix.arch == 'x64_arm'
       # You may pin to the exact commit or the version.
       # uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: ${{ matrix.arch }}
-        toolset: ${{ matrix.toolset }}
-        sdk: '10.0.22621.0'
-        #spectre: # set true to use VC libraries with sepctre mitigations
-    - name: Enable Developer Command Prompt
-      if: matrix.arch != 'x64_arm'
-      # You may pin to the exact commit or the version.
-      # uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: ${{ matrix.arch }}
-        toolset: ${{ matrix.toolset }}
-        #sdk:   # use the latest
+        arch: ${{ matrix.arch.id }}
+        vsversion: ${{ matrix.vs.id }}
+        sdk: ${{ matrix.arch.sdk }}
         #spectre: # set true to use VC libraries with sepctre mitigations
 
       ##########################################################################
@@ -244,7 +229,7 @@ jobs:
           ${{github.workspace}}\tools
           ${{github.workspace}}\kerberos\current
           ${{github.workspace}}\rexx
-        key: msvc-${{ matrix.toolset }}-${{ matrix.arch }}+zlib-${{env.ZLIB_VERSION}}+openssl-${{env.CK_OPENSSL_VERSION}}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VERSION}}+rexxre+ver3
+        key: msvc-${{ matrix.vs.id }}-${{ matrix.arch.id }}+zlib-${{env.ZLIB_VERSION}}+openssl-${{ steps.cfg.outputs.openssl }}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VER}}+rexxre+ver3
         nocache: ${{ vars.NOCACHE }}
     - name: Get libssh url group
       if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
@@ -269,12 +254,12 @@ jobs:
         
         # Get and unpack openssl
         cd openssl
-        wget "https://github.com/openssl/openssl/releases/download/openssl-${{ env.CK_OPENSSL_VERSION }}/openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz" -outfile openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar 
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        ren openssl-${{ env.CK_OPENSSL_VERSION }} current
+        wget "https://github.com/openssl/openssl/releases/download/openssl-${{ steps.cfg.outputs.openssl }}/openssl-${{ steps.cfg.outputs.openssl }}.tar.gz" -outfile openssl-${{ steps.cfg.outputs.openssl }}.tar.gz
+        7z x openssl-${{ steps.cfg.outputs.openssl }}.tar.gz
+        7z x openssl-${{ steps.cfg.outputs.openssl }}.tar
+        del openssl-${{ steps.cfg.outputs.openssl }}.tar 
+        del openssl-${{ steps.cfg.outputs.openssl }}.tar.gz
+        ren openssl-${{ steps.cfg.outputs.openssl }} current
         dir current
         cd ..
         
@@ -324,7 +309,7 @@ jobs:
         # Get KFW
         echo Get KFW...
         cd kerberos
-        if ("${{matrix.arch}}" -eq "x86") {
+        if ("${{matrix.arch.id}}" -eq "x86") {
           echo x86 platform: ${{env.KFW_x86}}
           wget ${{env.KFW_x86}} -outfile kfw.msi
         } else {
@@ -630,7 +615,7 @@ jobs:
 
     - name: Fetch x86 wart
       uses: actions/download-artifact@v4
-      if: matrix.arch != 'x86' && matrix.arch != 'x64'
+      if: matrix.arch.id != 'x86' && matrix.arch.id != 'x64'
       with:
         name: wart-x86
         path: ${{ github.workspace }}
@@ -643,7 +628,7 @@ jobs:
         ROOT: ${{ github.workspace }}
       working-directory: kermit
       run: |
-        set k4w_root_override=${{github.workspace}}\${{ env.CK_K4W_PATH }}
+        set k4w_root_override=${{github.workspace}}\${{ steps.cfg.outputs.k4w }}
         set openssl_root_override=${{github.workspace}}\openssl\current
         set zlib_root_override=${{github.workspace}}\zlib\current
         set libssh_root_override=${{github.workspace}}\libssh\current
@@ -718,19 +703,12 @@ jobs:
         call mk.bat
 
         call mkdist.bat
-        
-        REM Check outputs
-        set MISSING_BUILD_RESULTS=
-        for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-        )
-
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
       shell: cmd
+    - name: Full Build Files Check
+      uses: "./.github/actions/files-check"
+      with:
+        path: ${{ github.workspace }}\kermit\k95\dist
+        list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
     - name: Fetch CA Certs bundle
       uses: actions/download-artifact@v4
@@ -753,7 +731,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: k95-vc${{ matrix.toolset }}-${{ matrix.arch }}
+        name: k95-vc${{ matrix.vs.id }}-${{ matrix.arch.id }}
         path: ${{ github.workspace }}\ckwin
         if-no-files-found: error
         retention-days: 7
@@ -979,19 +957,12 @@ jobs:
           cd ..\k95
           call mk.bat
           call mkdist.bat
-          
-          echo Check outputs...
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-          
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
       - name: Fetch CA Certs bundle
         uses: actions/download-artifact@v4
@@ -1025,33 +996,75 @@ jobs:
 
 
   ###############################################################################
-  # Build with Open Watcom 1.9 which allows targeting older versions of Windows #
+  # Build with Open Watcom                                                      #
+  # - allows targeting older versions of Windows                                #
+  # - cross-compile C-Kermit for OS/2                                           #
   ###############################################################################
   # It is also likely to be upset by the same sorts of things as Visual C++ 6
   # which reduces the likelihood of accidentally breaking that compiler.
-  Build-OpenWatcom19-Win32:
-    runs-on: windows-latest
+  Build-OpenWatcom:
     needs: Prepare-Docs
+    strategy:
+      matrix:
+        os:
+          - id: 'nt'
+            dist: 'dist'
+          - id: 'nt-legacy'
+            dist: 'dist'
+          - id: 'os2'
+            dist: 'dist-os2'
+        ver:
+          - '1.9'
+    runs-on: windows-latest
+    name: Build-Open-Watcom-${{ matrix.ver }} (${{ matrix.os.id }})
+
     steps:
     - uses: actions/checkout@v4
 
-    - name: Open Watcom setup
+    - name: Cache Open Watcom ${{ matrix.ver }}
+      uses: "./.github/actions/cache"
+      id: cache-open-watcom
+      with:
+        path: |
+          ${{github.workspace}}/watcom
+        key: all-openwatcom-${{ matrix.ver }}
+        nocache: ${{ vars.NOCACHE }}
+    - name: Get and unpack Open Watcom
+      if: steps.cache-open-watcom.outputs.cache-hit != 'true'
       uses: open-watcom/setup-watcom@v0
       with:
-        version: "1.9"
+        version: ${{ matrix.ver }}
+        location: watcom
+        environment: 'false'
+    - name: Open Watcom setup
+      run: |
+        if [[ "${{ runner.os }}" = "Windows" ]]; then
+          echo "WATCOM=${{ github.workspace }}\watcom" >> "$GITHUB_ENV"
+          echo "WATCOM_PATH=${{ github.workspace }}\watcom\binnt;${{ github.workspace }}\watcom\binw" >> "$GITHUB_ENV"
+        else
+          echo "WATCOM=${{ github.workspace }}/watcom" >> "$GITHUB_ENV"
+          echo "WATCOM_PATH=${{ github.workspace }}/watcom/binl:${{ github.workspace }}/watcom/binw" >> "$GITHUB_ENV"
+        fi
+        if [[ "${{ matrix.os.id }}" = "os2" ]]; then
+          echo "WATCOM_INCLUDE=${{ github.workspace }}/watcom/h;${{ github.workspace }}/watcom/h/os2" >> "$GITHUB_ENV"
+        else
+          echo "WATCOM_INCLUDE=${{ github.workspace }}/watcom/h;${{ github.workspace }}/watcom/h/nt" >> "$GITHUB_ENV"
+        fi
+      shell: bash
       # Cache Open Watcom because it takes quite a while to download and
       # decompress.
     - name: Cache openzinc
+      if: matrix.os.id == 'nt' || matrix.os.id == 'os2'
       uses: "./.github/actions/cache"
       id: cache-openzinc
       with:
         path: |
           ${{github.workspace}}\zinc
-        key: openzinc1
+        key: all-openzinc
         nocache: ${{ vars.NOCACHE }}
 
     - name: Get openzinc
-      if: steps.cache-openzinc.outputs.cache-hit != 'true'
+      if: (matrix.os.id == 'nt' || matrix.os.id == 'os2') && steps.cache-openzinc.outputs.cache-hit != 'true'
       run: |
         mkdir zinc
         cd zinc
@@ -1060,297 +1073,127 @@ jobs:
         cd ..
       shell: powershell
 
+    - name: Cache dependencies OS/2
+      if: matrix.os.id == 'os2'
+      uses: "./.github/actions/cache"
+      id: cache-dependencies-os2
+      with:
+        path: |
+          ${{github.workspace}}\info-zip
+          ${{github.workspace}}\toolkit
+        key: os2-infozip+os2tk45
+        nocache: ${{ vars.NOCACHE }}
+    - name: Get dependencies OS/2
+      if: matrix.os.id == 'os2' && steps.cache-dependencies-os2.outputs.cache-hit != 'true'
+      working-directory: ${{ github.workspace }}
+      run: |
+        cd info-zip
+        wget ${{ env.INFOZIP_FTP }}win32/zip300xn.zip -outfile zip.zip
+        mkdir os2
+        cd os2
+        wget ${{ env.INFOZIP_FTP }}os2/unz600.exe -outfile unzip.zip
+        7z x unzip.zip
+        move 32-bit\*
+        del unzip.zip
+        cd ..
+        7z x zip.zip
+        cd ..
+        dir
+        
+        wget ${{ env.OS2TK45 }} -outfile os2tk45.zip
+        7z x os2tk45.zip
+        del os2tk45.zip
+        move toolkit\os2tk45\h toolkit\os2tk45\include
+      shell: powershell
+
     - name: Full Build
       env:
         ROOT: ${{ github.workspace }}
-      working-directory: kermit
+      working-directory: kermit/p95
       run: |
+        set PATH=${{ env.WATCOM_PATH }};%PATH%
+        set INCLUDE=${{ env.WATCOM_INCLUDE }};%INCLUDE%
+        if "${{ matrix.os.id }}" == "os2" set ibm20dir_override=${{ github.workspace }}\toolkit\OS2TK45
+
+        REM Build for Windows NT 3.50 (and, someday, NT 3.1)
+        if "${{ matrix.os.id }}" == "nt-legacy" set CKT_NT31=yes
+
         call ${{ github.workspace }}\setenv.bat
         
         REM Enable Dynamic SSH just to be sure those bits are buildable
         REM with Open Watcom
-        set CKF_SSH=yes
-        set CKF_DYNAMIC_SSH=yes
-        
-        cd p95
-        call mknt.bat
-        cd ..\k95
-        call mk.bat
-        
-        call mkdist.bat
-        
-        
-        REM Check outputs
-        REM ctl3d.exe
-        set MISSING_BUILD_RESULTS=
-        
-        REM Can't use STANDARD_BUILD_OUTPUTS as we're not building k95crypt.dll
-        REM here for some reason.
-        for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-        )
+        if not "${{ matrix.os.id }}" == "nt-legacy" set CKF_SSH=yes
+        if not "${{ matrix.os.id }}" == "nt-legacy" set CKF_DYNAMIC_SSH=yes
 
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
+        REM Don't build the libssh backend though - that hasn't been ported 
+        REM to OS/2 yet
+        if "${{ matrix.os.id }}" == "os2" set CKF_SSH_BACKEND=no
+        
+        if "${{ matrix.os.id }}" == "os2" (
+          call mkos2.bat
+        ) else (
+          call mknt.bat
+        )
+        cd ..\k95
+        if "${{ matrix.os.id }}" == "os2" (
+          call mkos2.bat
+        ) else (
+          call mk.bat
+        )
+        call mk${{ matrix.os.dist }}.bat
       shell: cmd
+    - name: Full Build Files Check (os2)
+      if: matrix.os.id == 'os2'
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit/k95/dist-os2'
+        list: ${{ env.OS2_BUILD_OUTPUTS }}
+    - name: Full Build Files Check (nt)
+      if: matrix.os.id != 'os2'
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit/k95/dist'
+        list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
+
     - name: Dialer Build
+      if: matrix.os.id == 'nt' || matrix.os.id == 'os2'
       env:
         ROOT: ${{ github.workspace }}
       working-directory: kermit\dialer
       run: |
+        set PATH=${{ env.WATCOM_PATH }};%PATH%
+        set INCLUDE=${{ env.WATCOM_INCLUDE }};%INCLUDE%
+
         call ${{ github.workspace }}\setenv.bat
 
-        call mk.bat
-        call mkdist.bat
-        
-        set MISSING_BUILD_RESULTS=
-
-        for %%y in (k95dial.exe k95regtl.exe) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
+        if "${{ matrix.os.id }}" == "os2" (
+          call mkos2.bat
+        ) else (
+          call mk.bat
         )
-
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
+        call mk${{ matrix.os.dist }}.bat
       shell: cmd
+        
+    - name: Dialer Build Files Check
+      if: matrix.os.id == 'nt'
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit/dialer/dist'
+        list: 'k95dial.exe k95regtl.exe'
+
     - name: Prepare Artifacts
       working-directory: ${{ github.workspace }}\kermit\k95
       run: |
-        move dist ${{ github.workspace }}\ckwin
-        move ..\dialer\dist ${{ github.workspace }}\dialer
-      shell: cmd
-
-    - name: Fetch Docs
-      uses: actions/download-artifact@v4
-      with:
-        name: markdown-docs
-        path: ${{ github.workspace }}\ckwin
-
-      # ctl3dins is a utility for installing ctl3d32 and, in some cases,
-      # the Visual C++ runtime. Builds of the Dialer done with Open Watcom
-      # can't use ctl3d32 (it a Visual C++ thing), and they don't need the
-      # Visual C++ runtime, so ctl3dins.exe serves no purpose here. Even
-      # worse, Microsoft AntiVirus frequently misdetects it as being a
-      # virus (Trojan:Win32/Wacatac.B!ml) making the artifact difficult
-      # to download. So... just exclude ctl3dins from OpenWatcom-built
-      # artifacts.
-    - name: Remove ctl3dins.exe
-      run: del ${{ github.workspace }}\ckwin\ctl3dins.exe
-      shell: cmd
-
-      # Open Watcom builds don't include SSH so don't need the SSH Readme
-    - name: Remove SSH Readme
-      run: del ${{ github.workspace }}\ckwin\ssh-readme.html
-      shell: cmd
-
-    - name: Upload K95 Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: k95-ow1.9-x86
-        path: ${{ github.workspace }}\ckwin
-        if-no-files-found: error
-        retention-days: 7
-    - name: Upload Dialer Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: dialer-ow1.9-x86
-        path: ${{ github.workspace }}\dialer
-        if-no-files-found: error
-        retention-days: 7
-
-  Build-OpenWatcom19-Win32-NT-legacy:
-    runs-on: windows-latest
-    needs: Prepare-Docs
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Open Watcom setup
-        uses: open-watcom/setup-watcom@v0
-        with:
-          version: "1.9"
-      - name: Full Build
-        env:
-          ROOT: ${{ github.workspace }}
-        working-directory: kermit
-        run: |
-          REM Build for Windows NT 3.50 (and, someday, NT 3.1)
-          set CKT_NT31=yes
-          
-          call ${{ github.workspace }}\setenv.bat
-          cd p95
-          call mknt.bat
-          cd ..\k95
-          call mk.bat
-          
-          call mkdist.bat
-          
-          REM Check outputs
-          REM ctl3d.exe
-          set MISSING_BUILD_RESULTS=
-          
-          REM Can't use STANDARD_BUILD_OUTPUTS as we're not building k95crypt.dll
-          REM here for some reason.
-          for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-          )
-  
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
-        shell: cmd
-
-      - name: Fetch Docs
-        uses: actions/download-artifact@v4
-        with:
-          name: markdown-docs
-          path: ${{ github.workspace }}\ckwin
-
-      # ctl3dins is a utility for installing ctl3d32 and, in some cases,
-      # the Visual C++ runtime. Builds of the Dialer done with Open Watcom
-      # can't use ctl3d32 (it a Visual C++ thing), and they don't need the
-      # Visual C++ runtime, so ctl3dins.exe serves no purpose here. Even
-      # worse, Microsoft AntiVirus frequently misdetects it as being a
-      # virus (Trojan:Win32/Wacatac.B!ml) making the artifact difficult
-      # to download. So... just exclude ctl3dins from OpenWatcom-built
-      # artifacts.
-      - name: Remove ctl3dins.exe
-        run: del ${{ github.workspace }}\ckwin\ctl3dins.exe
-        shell: cmd
-
-        # Open Watcom builds don't include SSH so don't need the SSH Readme
-      - name: Remove SSH Readme
-        run: del ${{ github.workspace }}\ckwin\ssh-readme.html
-        shell: cmd
-
-      - name: Prepare Artifact
-        working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          move dist ${{ github.workspace }}\ckwin
-        shell: cmd
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k95-ow1.9-x86-nt350
-          path: ${{ github.workspace }}\ckwin
-          if-no-files-found: error
-          retention-days: 7
-
-  ##############################################################################
-  # Build C-Kermit for OS/2 with Open Watcom 1.9 which can cross-compile       #
-  ##############################################################################
-  Build-OpenWatcom19-OS2:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Open Watcom setup
-        uses: open-watcom/setup-watcom@v0
-        with:
-          version: "1.9"
-      - name: Cache dependencies
-        uses: "./.github/actions/cache"
-        id: cache-dependencies
-        with:
-          path: |
-            ${{github.workspace}}\zinc
-            ${{github.workspace}}\info-zip
-            ${{github.workspace}}\toolkit
-          key: openzinc1+infozip+os2tk45
-          nocache: ${{ vars.NOCACHE }}
-      - name: Get dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir zinc
-          cd zinc
-          wget ${{ env.OPENZINC }} -outfile OZ1.zip
-          7z x OZ1.zip
-          cd ..
-          
-          cd info-zip
-          wget ${{ env.INFOZIP_FTP }}win32/zip300xn.zip -outfile zip.zip
-          mkdir os2
-          cd os2
-          wget ${{ env.INFOZIP_FTP }}os2/unz600.exe -outfile unzip.zip
-          7z x unzip.zip
-          move 32-bit\*
-          del unzip.zip
-          cd ..
-          7z x zip.zip
-          cd ..
-          dir
-          
-          wget ${{ env.OS2TK45 }} -outfile os2tk45.zip
-          7z x os2tk45.zip
-          del os2tk45.zip
-          move toolkit\os2tk45\h toolkit\os2tk45\include
-        shell: powershell
-      - name: Kermit/2 Build
-        env:
-          ROOT: ${{ github.workspace }}
-        working-directory: kermit
-        run: |
-          set ibm20dir_override=${{ github.workspace }}\toolkit\OS2TK45
-
-          call ${{ github.workspace }}\setenv.bat
-          
-          REM Enable Dynamic SSH just to be sure those bits are buildable
-          REM for OS/2 with Open Watcom
-          set CKF_SSH=yes
-          set CKF_DYNAMIC_SSH=yes
-          
-          REM Don't build the libssh backend though - that hasn't been ported 
-          REM to OS/2 yet
-          set CKF_SSH_BACKEND=no
-          
-          cd p95
-          call mkos2.bat
-          
-          cd ..\k95
-          call mkos2.bat
-          
-          call mkdist-os2.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.OS2_BUILD_OUTPUTS}}) do (
-            if not exist dist-os2\%%y echo Build result not found: %%y
-            if not exist dist-os2\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist-os2\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
-        shell: cmd
-      - name: Dialer Build
-        env:
-          ROOT: ${{ github.workspace }}
-        working-directory: kermit\dialer
-        run: |
-          call ${{ github.workspace }}\setenv.bat
-          call mkos2.bat
-        shell: cmd
-      - name: Make Dialer Distribution
-        env:
-          ROOT: ${{ github.workspace }}
-        working-directory: kermit\dialer
-        run: mkdist-os2.bat
-        shell: cmd
-      - name: Prepare Artifact
-        working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          move ..\dialer\dist-os2\* dist-os2\
-          move dist-os2 ${{ github.workspace }}\ckos2
+        if "${{ matrix.os.id }}" == "nt" (
+          move ${{ matrix.os.dist }} ${{ github.workspace }}\ckwin
+          move ..\dialer\${{ matrix.os.dist }} ${{ github.workspace }}\dialer
+        )
+        if "${{ matrix.os.id }}" == "nt-legacy" (
+          move ${{ matrix.os.dist }} ${{ github.workspace }}\ckwin
+        )
+        if "${{ matrix.os.id }}" == "os2" (
+          move ..\dialer\${{ matrix.os.dist }}\* ${{ matrix.os.dist }}\
+          move ${{ matrix.os.dist }} ${{ github.workspace }}\ckos2
           cd ${{ github.workspace }}\ckos2
           
           echo Making full distribution archive K2PACK.EXE
@@ -1370,29 +1213,83 @@ jobs:
           mkdir ${{ github.workspace }}\dist-mini
           move K2PACK.EXE ${{ github.workspace }}\dist-mini\
           copy setup.exe ${{ github.workspace }}\dist-mini\
-        shell: cmd
+        )
+      shell: cmd
 
-      - name: Upload Zip Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k2-ow1.9-x86
-          path: ${{ github.workspace }}\ckos2
-          if-no-files-found: error
-          retention-days: 7
-      - name: Upload Full Installer Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k2-full-install
-          path: ${{ github.workspace }}\dist-full
-          if-no-files-found: error
-          retention-days: 7
-      - name: Upload Minimal Installer Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k2-mini-install
-          path: ${{ github.workspace }}\dist-mini
-          if-no-files-found: error
-          retention-days: 7
+    - name: Fetch Docs
+      if: matrix.os.id == 'nt' || matrix.os.id == 'nt-legacy'
+      uses: actions/download-artifact@v4
+      with:
+        name: markdown-docs
+        path: ${{ github.workspace }}\ckwin
+
+      # ctl3dins is a utility for installing ctl3d32 and, in some cases,
+      # the Visual C++ runtime. Builds of the Dialer done with Open Watcom
+      # can't use ctl3d32 (it a Visual C++ thing), and they don't need the
+      # Visual C++ runtime, so ctl3dins.exe serves no purpose here. Even
+      # worse, Microsoft AntiVirus frequently misdetects it as being a
+      # virus (Trojan:Win32/Wacatac.B!ml) making the artifact difficult
+      # to download. So... just exclude ctl3dins from OpenWatcom-built
+      # artifacts.
+    - name: Remove ctl3dins.exe
+      if: matrix.os.id == 'nt' || matrix.os.id == 'nt-legacy'
+      run: del ${{ github.workspace }}\ckwin\ctl3dins.exe
+      shell: cmd
+
+      # Open Watcom builds don't include SSH so don't need the SSH Readme
+    - name: Remove SSH Readme
+      if: matrix.os.id == 'nt' || matrix.os.id == 'nt-legacy'
+      run: del ${{ github.workspace }}\ckwin\ssh-readme.html
+      shell: cmd
+
+    - name: Upload K95 Artifact
+      if: matrix.os.id == 'nt'
+      uses: actions/upload-artifact@v4
+      with:
+        name: k95-ow${{ matrix.ver }}-x86
+        path: ${{ github.workspace }}\ckwin
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload Dialer Artifact
+      if: matrix.os.id == 'nt'
+      uses: actions/upload-artifact@v4
+      with:
+        name: dialer-ow${{ matrix.ver }}-x86
+        path: ${{ github.workspace }}\dialer
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload Artifact
+      if: matrix.os.id == 'nt-legacy'
+      uses: actions/upload-artifact@v4
+      with:
+        name: k95-ow${{ matrix.ver }}-x86-nt350
+        path: ${{ github.workspace }}\ckwin
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload Zip Artifact
+      if: matrix.os.id == 'os2'
+      uses: actions/upload-artifact@v4
+      with:
+        name: k2-ow${{ matrix.ver }}-x86
+        path: ${{ github.workspace }}\ckos2
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload Full Installer Artifact
+      if: matrix.os.id == 'os2'
+      uses: actions/upload-artifact@v4
+      with:
+        name: k2-full-install
+        path: ${{ github.workspace }}\dist-full
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload Minimal Installer Artifact
+      if: matrix.os.id == 'os2'
+      uses: actions/upload-artifact@v4
+      with:
+        name: k2-mini-install
+        path: ${{ github.workspace }}\dist-mini
+        if-no-files-found: error
+        retention-days: 7
 
   ##############################################################################
   # Build with Visual C++ 2003 Toolkit + Windows Server 2003 SP1 Platform SDK  #
@@ -1424,7 +1321,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-          toolset: 14.0
 
         # Cache the Visual C++ 2003 Toolkit & Platform SDK because it takes
         # quite a while to download and decompress and I don't want my FTP
@@ -1663,20 +1559,12 @@ jobs:
           call mk.bat
           
           call mkdist.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          REM ctl3dins.exe
-          for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit/k95/dist'
+          list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
 
       - name: Full Build Non-standard configs
         env:
@@ -1715,38 +1603,21 @@ jobs:
           
           mkdir dist-misc
           move *.exe dist-misc          
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (cknkui.exe) do (
-            if not exist dist-misc\%%y echo Build result not found: %%y
-            if not exist dist-misc\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist-misc\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Non-standard configs Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit/k95/dist-misc'
+          list: 'cknkui.exe'
 
       - name: Check additional legacy outputs
         if: matrix.legacy_dependencies == 'yes'
-        working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          REM TODO: srp-tconf.exe srp-passwd.exe
-          REM TODO: Kerberos bits
-          for %%y in (k95crypt.dll) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing legacy build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
-        shell: cmd
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit/k95/dist'
+          # TODO: srp-tconf.exe srp-passwd.exe
+          # TODO: Kerberos bits
+          list: 'k95crypt.dll'
 
       - name: Fetch CA Certs bundle
         if: matrix.legacy_dependencies == 'yes'
@@ -1826,7 +1697,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-          toolset: 14.0
 
         # Cache the Visual C++ 2003 Toolkit & Platform SDK because it takes
         # quite a while to download and decompress and I don't want my FTP
@@ -1934,19 +1804,12 @@ jobs:
           call mk.bat
           
           call mkdist.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-          )
-  
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit/k95/dist'
+          list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
@@ -2083,7 +1946,7 @@ jobs:
   # This also isn't anywhere near a perfect test. Just because this builds
   # doesn't mean we haven't broken something on OpenVMS or Solaris or AIX
   # or Digital UNIX or BSD or MacOS X or any number of other platforms.
-  C-Kermit-Linux-Build-Test:
+  Test-C-Kermit-Linux-Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -2102,7 +1965,7 @@ jobs:
           path: |
             ${{github.workspace}}/ckermit
             ${{github.workspace}}/openssl
-          key: ${{ runner.os }}-ckermit${{ env.C_KERMIT_VERSION }}-r1
+          key: ${{ runner.os }}-C-Kermit-${{ env.C_KERMIT_VERSION }}-r1
           nocache: ${{ vars.NOCACHE }}
       - name: Get C-Kermit ${{env.C_KERMIT_VERSION}}
         if: steps.cache-code.outputs.cache-hit != 'true'

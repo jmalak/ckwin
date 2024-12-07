@@ -930,8 +930,7 @@ jobs:
 
       - name: Prepare Artifact
         working-directory: ${{github.workspace}}\kermit\k95
-        run: |
-          move dist ${{github.workspace}}\ckwin
+        run: move dist ${{github.workspace}}\ckwin
         shell: cmd
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -1081,6 +1080,11 @@ jobs:
             copy setup.exe ${{github.workspace}}\dist-mini\
           )
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
 
       - name: Fetch Docs
         if: matrix.os.id == 'nt' || matrix.os.id == 'nt-legacy'
@@ -1241,24 +1245,20 @@ jobs:
           dir srp-2.1.2
           
           # and openssl
-          cd openssl
           wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz -outfile openssl-1.0.1u.tar.gz
           7z x openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar
+          7z x openssl-1.0.1u.tar -oopenssl
           del openssl-1.0.1u.tar
           del openssl-1.0.1u.tar.gz
-          ren openssl-1.0.1u 1.0.1u
-          dir 1.0.1u
-          cd ..
+          ren openssl\openssl-1.0.1u openssl\current
+          dir openssl\current
                    
-          # and kerberos for windows 2.6.0 (pre-built with Visual C++ 2003 Professional)
-          cd kerberos
+          # and kerberos for windows 2.6.5 (pre-built with Visual C++ 2003 Professional)
           wget https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip -outfile kfw-2.6-final-vc2003.zip
-          7z x kfw-2.6-final-vc2003.zip
+          7z x kfw-2.6-final-vc2003.zip -okerberos
           del kfw-2.6-final-vc2003.zip
-          ren kfw-2.6-final kfw-2.6.5
-          dir kfw-2.6.5
-          cd ..
+          ren kerberos\kfw-2.6-final kerberos\current
+          dir kerberos\current
           
           # SuperLAT Headers
           mkdir superlat
@@ -1266,15 +1266,13 @@ jobs:
           wget https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip -outfile slatfio.zip
           7z x slatfio.zip
           mkdir include
-          cd include
-          copy ..\TESTSVC\LATIOC.H
-          copy ..\TESTSVC\NETTYPES.H
-          copy ..\TESTSVC\NTDDTDI.H
-          copy ..\TESTSVC\PACKOFF.H
-          copy ..\TESTSVC\PACKON.H
-          copy ..\TESTSVC\TDI.H
-          copy ..\TESTSVC\TIHDR.H
-          cd ..
+          copy TESTSVC\LATIOC.H include\latioc.h
+          copy TESTSVC\NETTYPES.H include\nettypes.h
+          copy TESTSVC\NTDDTDI.H include\ntddtdi.h
+          copy TESTSVC\PACKOFF.H include\packoff.h
+          copy TESTSVC\PACKON.H include\packon.h
+          copy TESTSVC\TDI.H include\tdi.h
+          copy TESTSVC\TIHDR.H include\tihdr.h
           Remove-Item -Recurse -Force TESTSVC
           Remove-Item -Recurse -Force CONN
           del README.1ST
@@ -1614,6 +1612,10 @@ jobs:
   Build-MinGW64-Linux:
     runs-on: ubuntu-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs]
+    strategy:
+      matrix:
+        arch:
+          - 'x64'
 
     steps:
       - uses: actions/checkout@v4

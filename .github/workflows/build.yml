@@ -112,8 +112,8 @@ jobs:
           echo ^<head^>^<title^>Kermit 95 Change-Log^</title^>^</head^>
           echo ^<body^>
           ) > change-log.html
-          python -m markdown -x markdown.extensions.fenced_code ${{ github.workspace }}\doc\ssh-readme.md >> ssh-readme.html
-          python -m markdown -x markdown.extensions.fenced_code ${{ github.workspace }}\doc\changes.md >> change-log.html
+          python -m markdown -x markdown.extensions.fenced_code ${{github.workspace}}\doc\ssh-readme.md >> ssh-readme.html
+          python -m markdown -x markdown.extensions.fenced_code ${{github.workspace}}\doc\changes.md >> change-log.html
           (
           echo ^</body^>
           echo ^</html^>
@@ -156,74 +156,59 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wart-x86
-          path: ${{ github.workspace }}\ckwart.exe
+          path: ${{github.workspace}}\ckwart.exe
           if-no-files-found: error
           retention-days: 1
 
   ##############################################################################
-  # Build with Visual C++ 14.x (2015/2017/2019/2022)                           #
+  # Build with Visual C++ (2019/2022)                                          #
   ##############################################################################
   # This includes the latest compilers available (2022), plus the most recent
   # capable of still targeting Windows XP (2017). All support x86, x86-64, ARM32
   # and ARM64.
   Build-VisualCxx:
-    runs-on: windows-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs, Build-Wart]
     strategy:
       matrix:
+        vs:
+          #- id: 2017
+          #  image: ????
+          - id: 2019
+            image: windows-2019
+          - id: 2022
+            image: windows-2022
         arch:
-          - x86
-          - x64
-          - x64_arm
-          - x64_arm64
-        toolset:
-          # Note: the 14.0 toolset doesn't really work (just results in 14.4)
-          - 14.2
-          - 14.4
-        exclude:
-          # The last ARM32 redist was shipped for 14.0 (Visual C++ 2015), but
-          # newer versions of Visual C++ seem to be able to target it OK. For
-          # now just use 14.2 same as for x86 and x86-64.
-          - arch: x64_arm
-            toolset: 14.4
-          # No point in building ARM64 targets with anything but the latest as
-          # the latest hasn't dropped any windows support yet.
-          - arch: x64_arm64
-            toolset: 14.2
+          - id: x86
+          - id: x64
+          - id: x64_arm
+            # temporary setup Windows SDK version for 32-bit ARM to 10.0.22621.0
+            # latest SDK version 10.0.26100.0 doesn't contains 32-bit ARM files
+            sdk: 10.0.22621.0
+          - id: x64_arm64
+    runs-on: ${{matrix.vs.image}}
+    name: Build-VisualCxx-VS${{matrix.vs.id}} (${{matrix.arch.id}})
 
     steps:
     - uses: actions/checkout@v4
     - name: Select env configuration
+      id: cfg
       run: |
-        if [[ "${{ matrix.arch }}" = "x64_arm" || "${{ matrix.arch }}" = "x64_arm64" ]]; then
-          echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_ARM_VERSION }}" >> "$GITHUB_ENV"
-          echo "CK_K4W_PATH=." >> "$GITHUB_ENV"
+        if [[ "${{matrix.arch.id}}" = "x64_arm" || "${{matrix.arch.id}}" = "x64_arm64" ]]; then
+          echo "openssl=${{env.OPENSSL_ARM_VERSION}}" >> "$GITHUB_OUTPUT"
+          echo "k4w=." >> "$GITHUB_OUTPUT"
         else
-          echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_VERSION }}" >> "$GITHUB_ENV"
-          echo "CK_K4W_PATH=kerberos\current\Kerberos" >> "$GITHUB_ENV"
+          echo "openssl=${{env.OPENSSL_VERSION}}" >> "$GITHUB_OUTPUT"
+          echo "k4w=kerberos\current\Kerberos" >> "$GITHUB_OUTPUT"
         fi
       shell: bash
-    # temporary setup Windows SDK version for 32-bit ARM to 10.0.22621.0 because
-    # latest SDK version 10.0.26100.0 doesn't contains 32-bit ARM files
     - name: Enable Developer Command Prompt
-      if: matrix.arch == 'x64_arm'
       # You may pin to the exact commit or the version.
       # uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: ${{ matrix.arch }}
-        toolset: ${{ matrix.toolset }}
-        sdk: '10.0.22621.0'
-        #spectre: # set true to use VC libraries with sepctre mitigations
-    - name: Enable Developer Command Prompt
-      if: matrix.arch != 'x64_arm'
-      # You may pin to the exact commit or the version.
-      # uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: ${{ matrix.arch }}
-        toolset: ${{ matrix.toolset }}
-        #sdk:   # use the latest
+        arch: ${{matrix.arch.id}}
+        vsversion: ${{matrix.vs.id}}
+        sdk: ${{matrix.arch.sdk}}
         #spectre: # set true to use VC libraries with sepctre mitigations
 
       ##########################################################################
@@ -244,8 +229,8 @@ jobs:
           ${{github.workspace}}\tools
           ${{github.workspace}}\kerberos\current
           ${{github.workspace}}\rexx
-        key: msvc-${{ matrix.toolset }}-${{ matrix.arch }}+zlib-${{env.ZLIB_VERSION}}+openssl-${{env.CK_OPENSSL_VERSION}}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VERSION}}+rexxre+ver3
-        nocache: ${{ vars.NOCACHE }}
+        key: msvc-${{matrix.vs.id}}-${{matrix.arch.id}}+zlib-${{env.ZLIB_VERSION}}+openssl-${{steps.cfg.outputs.openssl}}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VER}}+rexxre+ver3
+        nocache: ${{vars.NOCACHE}}
     - name: Get libssh url group
       if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
       id: libssh-group
@@ -269,12 +254,12 @@ jobs:
         
         # Get and unpack openssl
         cd openssl
-        wget "https://github.com/openssl/openssl/releases/download/openssl-${{ env.CK_OPENSSL_VERSION }}/openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz" -outfile openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        7z x openssl-${{ env.CK_OPENSSL_VERSION }}.tar
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar 
-        del openssl-${{ env.CK_OPENSSL_VERSION }}.tar.gz
-        ren openssl-${{ env.CK_OPENSSL_VERSION }} current
+        wget "https://github.com/openssl/openssl/releases/download/openssl-${{steps.cfg.outputs.openssl}}/openssl-${{steps.cfg.outputs.openssl}}.tar.gz" -outfile openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+        7z x openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+        7z x openssl-${{steps.cfg.outputs.openssl}}.tar
+        del openssl-${{steps.cfg.outputs.openssl}}.tar 
+        del openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+        ren openssl-${{steps.cfg.outputs.openssl}} current
         dir current
         cd ..
         
@@ -289,8 +274,8 @@ jobs:
         cd current
         mkdir build
         cd ..
-        dir current
         cd ..
+        dir libssh\current
         
         # Get and unpack libdes
         cd libdes
@@ -324,7 +309,7 @@ jobs:
         # Get KFW
         echo Get KFW...
         cd kerberos
-        if ("${{matrix.arch}}" -eq "x86") {
+        if ("${{matrix.arch.id}}" -eq "x86") {
           echo x86 platform: ${{env.KFW_x86}}
           wget ${{env.KFW_x86}} -outfile kfw.msi
         } else {
@@ -630,10 +615,10 @@ jobs:
 
     - name: Fetch x86 wart
       uses: actions/download-artifact@v4
-      if: matrix.arch != 'x86' && matrix.arch != 'x64'
+      if: matrix.arch.id != 'x86' && matrix.arch.id != 'x64'
       with:
         name: wart-x86
-        path: ${{ github.workspace }}
+        path: ${{github.workspace}}
 
       ##########################################################################
       # Build K95, K95G and other bits for redistribution                      #
@@ -643,7 +628,7 @@ jobs:
         ROOT: ${{ github.workspace }}
       working-directory: kermit
       run: |
-        set k4w_root_override=${{github.workspace}}\${{ env.CK_K4W_PATH }}
+        set k4w_root_override=${{github.workspace}}\${{steps.cfg.outputs.k4w}}
         set openssl_root_override=${{github.workspace}}\openssl\current
         set zlib_root_override=${{github.workspace}}\zlib\current
         set libssh_root_override=${{github.workspace}}\libssh\current
@@ -718,31 +703,24 @@ jobs:
         call mk.bat
 
         call mkdist.bat
-        
-        REM Check outputs
-        set MISSING_BUILD_RESULTS=
-        for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-        )
-
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
       shell: cmd
+    - name: Full Build Files Check
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit\k95\dist'
+        list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
     - name: Fetch CA Certs bundle
       uses: actions/download-artifact@v4
       with:
         name: ca_certs
-        path: ${{ github.workspace }}\kermit\k95\dist
+        path: ${{github.workspace}}\kermit\k95\dist
 
     - name: Fetch Docs
       uses: actions/download-artifact@v4
       with:
         name: markdown-docs
-        path: ${{ github.workspace }}\kermit\k95\dist
+        path: ${{github.workspace}}\kermit\k95\dist
 
     - name: Prepare Artifact
       working-directory: ${{ github.workspace }}\kermit\k95
@@ -753,8 +731,8 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: k95-vc${{ matrix.toolset }}-${{ matrix.arch }}
-        path: ${{ github.workspace }}\ckwin
+        name: k95-vc${{matrix.vs.id}}-${{matrix.arch.id}}
+        path: ${{github.workspace}}\ckwin
         if-no-files-found: error
         retention-days: 7
 
@@ -764,7 +742,7 @@ jobs:
   # This is the last compiler that can target Itanium. Due to its lack of C99
   # support, builds with Visual C++ 2010 and older don't include SSH support.
   # OpenSSL 1.1.1t is supported however.
-  Build-PSDK71:
+  Build-VS2010-PSDK71:
     runs-on: windows-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs, Build-Wart]
     strategy:
@@ -777,7 +755,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select env configuration
-        run: echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_VERSION }}" >> "$GITHUB_ENV"
+        id: cfg
+        run: echo "openssl=${{env.OPENSSL_VERSION}}" >> "$GITHUB_OUTPUT"
         shell: bash
         ##########################################################################
         # Fetch the compiler                                                     #
@@ -792,7 +771,7 @@ jobs:
             ${{github.workspace}}\vc10.cmd
             ${{github.workspace}}\vcredist_x86.exe
           key: platform-sdk-71-compiler+sdk+redist
-          nocache: ${{ vars.NOCACHE }}
+          nocache: ${{vars.NOCACHE}}
       - name: Get Windows 7 Platform SDK v7.1
         if: steps.cache-compiler.outputs.cache-hit != 'true'
         run: |
@@ -827,20 +806,20 @@ jobs:
             ${{github.workspace}}\libdes\Release
             ${{github.workspace}}\libdes\Debug
             ${{github.workspace}}\tools
-          key: platform-sdk-71-optdepts-${{ matrix.arch }}+nasm+openssl-${{env.CK_OPENSSL_VERSION}}+libdes+v3
-          nocache: ${{ vars.NOCACHE }}
+          key: platform-sdk-71-optdepts-${{matrix.arch}}+nasm+openssl-${{steps.cfg.outputs.openssl}}+libdes+v3
+          nocache: ${{vars.NOCACHE}}
       - name: Get dependencies
         if: steps.cache-optional-dependencies.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         run: |         
           # Get and unpack openssl
           cd openssl
-          wget https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz -outfile openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          7z x openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          7z x openssl-${{env.CK_OPENSSL_VERSION}}.tar
-          del openssl-${{env.CK_OPENSSL_VERSION}}.tar 
-          del openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          ren openssl-${{env.CK_OPENSSL_VERSION}} current
+          wget https://github.com/openssl/openssl/releases/download/openssl-${{steps.cfg.outputs.openssl}}/openssl-${{steps.cfg.outputs.openssl}}.tar.gz -outfile openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+          7z x openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+          7z x openssl-${{steps.cfg.outputs.openssl}}.tar
+          del openssl-${{steps.cfg.outputs.openssl}}.tar 
+          del openssl-${{steps.cfg.outputs.openssl}}.tar.gz
+          ren openssl-${{steps.cfg.outputs.openssl}} current
           dir current
           cd ..
           
@@ -947,7 +926,7 @@ jobs:
         if: matrix.arch == 'ia64'
         with:
           name: wart-x86
-          path: ${{ github.workspace }}
+          path: ${{github.workspace}}
 
         ##########################################################################
         # Build K95, K95G and other bits for redistribution                      #
@@ -979,47 +958,39 @@ jobs:
           cd ..\k95
           call mk.bat
           call mkdist.bat
-          
-          echo Check outputs...
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-          
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
       - name: Fetch CA Certs bundle
         uses: actions/download-artifact@v4
         with:
           name: ca_certs
-          path: ${{ github.workspace }}\kermit\k95\dist
+          path: ${{github.workspace}}\kermit\k95\dist
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
         with:
           name: markdown-docs
-          path: ${{ github.workspace }}\kermit\k95\dist
+          path: ${{github.workspace}}\kermit\k95\dist
 
       # Builds with Visual C++ 2010 don't support SSH so don't need the SSH Readme
       - name: Remove SSH Readme
-        run: del ${{ github.workspace }}\kermit\k95\dist\ssh-readme.html
+        run: del ${{github.workspace}}\kermit\k95\dist\ssh-readme.html
         shell: cmd
 
       - name: Prepare Artifact
         working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          move dist ${{ github.workspace }}\ckwin
+        run: move dist ${{ github.workspace }}\ckwin
         shell: cmd
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: k95-vc10-${{ matrix.arch }}
-          path: ${{ github.workspace }}\ckwin
+          name: k95-vc10-${{matrix.arch}}
+          path: ${{github.workspace}}\ckwin
           if-no-files-found: error
           retention-days: 7
 
@@ -1048,14 +1019,14 @@ jobs:
         path: |
           ${{github.workspace}}\zinc
         key: openzinc1
-        nocache: ${{ vars.NOCACHE }}
+        nocache: ${{vars.NOCACHE}}
 
     - name: Get openzinc
       if: steps.cache-openzinc.outputs.cache-hit != 'true'
       run: |
         mkdir zinc
         cd zinc
-        wget ${{ env.OPENZINC }} -outfile OZ1.zip
+        wget ${{env.OPENZINC}} -outfile OZ1.zip
         7z x OZ1.zip
         cd ..
       shell: powershell
@@ -1078,24 +1049,13 @@ jobs:
         call mk.bat
         
         call mkdist.bat
-        
-        
-        REM Check outputs
-        REM ctl3d.exe
-        set MISSING_BUILD_RESULTS=
-        
-        REM Can't use STANDARD_BUILD_OUTPUTS as we're not building k95crypt.dll
-        REM here for some reason.
-        for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-        )
-
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
       shell: cmd
+    - name: Full Build Files Check
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit\k95\dist'
+        list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
+
     - name: Dialer Build
       env:
         ROOT: ${{ github.workspace }}
@@ -1105,31 +1065,25 @@ jobs:
 
         call mk.bat
         call mkdist.bat
-        
-        set MISSING_BUILD_RESULTS=
-
-        for %%y in (k95dial.exe k95regtl.exe) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-        )
-
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
       shell: cmd
+    - name: Dialer Build Files Check
+      uses: "./.github/actions/files-check"
+      with:
+        path: 'kermit\dialer\dist'
+        list: 'k95dial.exe k95regtl.exe'
+
     - name: Prepare Artifacts
-      working-directory: ${{ github.workspace }}\kermit\k95
+      working-directory: ${{github.workspace}}\kermit\k95
       run: |
-        move dist ${{ github.workspace }}\ckwin
-        move ..\dialer\dist ${{ github.workspace }}\dialer
+        move dist ${{github.workspace}}\ckwin
+        move ..\dialer\dist ${{github.workspace}}\dialer
       shell: cmd
 
     - name: Fetch Docs
       uses: actions/download-artifact@v4
       with:
         name: markdown-docs
-        path: ${{ github.workspace }}\ckwin
+        path: ${{github.workspace}}\ckwin
 
       # ctl3dins is a utility for installing ctl3d32 and, in some cases,
       # the Visual C++ runtime. Builds of the Dialer done with Open Watcom
@@ -1140,26 +1094,26 @@ jobs:
       # to download. So... just exclude ctl3dins from OpenWatcom-built
       # artifacts.
     - name: Remove ctl3dins.exe
-      run: del ${{ github.workspace }}\ckwin\ctl3dins.exe
+      run: del ${{github.workspace}}\ckwin\ctl3dins.exe
       shell: cmd
 
       # Open Watcom builds don't include SSH so don't need the SSH Readme
     - name: Remove SSH Readme
-      run: del ${{ github.workspace }}\ckwin\ssh-readme.html
+      run: del ${{github.workspace}}\ckwin\ssh-readme.html
       shell: cmd
 
     - name: Upload K95 Artifact
       uses: actions/upload-artifact@v4
       with:
         name: k95-ow1.9-x86
-        path: ${{ github.workspace }}\ckwin
+        path: ${{github.workspace}}\ckwin
         if-no-files-found: error
         retention-days: 7
     - name: Upload Dialer Artifact
       uses: actions/upload-artifact@v4
       with:
         name: dialer-ow1.9-x86
-        path: ${{ github.workspace }}\dialer
+        path: ${{github.workspace}}\dialer
         if-no-files-found: error
         retention-days: 7
 
@@ -1174,6 +1128,7 @@ jobs:
         uses: open-watcom/setup-watcom@v0
         with:
           version: "1.9"
+
       - name: Full Build
         env:
           ROOT: ${{ github.workspace }}
@@ -1189,29 +1144,18 @@ jobs:
           call mk.bat
           
           call mkdist.bat
-          
-          REM Check outputs
-          REM ctl3d.exe
-          set MISSING_BUILD_RESULTS=
-          
-          REM Can't use STANDARD_BUILD_OUTPUTS as we're not building k95crypt.dll
-          REM here for some reason.
-          for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-          )
-  
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
         with:
           name: markdown-docs
-          path: ${{ github.workspace }}\ckwin
+          path: ${{github.workspace}}\ckwin
 
       # ctl3dins is a utility for installing ctl3d32 and, in some cases,
       # the Visual C++ runtime. Builds of the Dialer done with Open Watcom
@@ -1222,24 +1166,23 @@ jobs:
       # to download. So... just exclude ctl3dins from OpenWatcom-built
       # artifacts.
       - name: Remove ctl3dins.exe
-        run: del ${{ github.workspace }}\ckwin\ctl3dins.exe
+        run: del ${{github.workspace}}\ckwin\ctl3dins.exe
         shell: cmd
 
         # Open Watcom builds don't include SSH so don't need the SSH Readme
       - name: Remove SSH Readme
-        run: del ${{ github.workspace }}\ckwin\ssh-readme.html
+        run: del ${{github.workspace}}\ckwin\ssh-readme.html
         shell: cmd
 
       - name: Prepare Artifact
         working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          move dist ${{ github.workspace }}\ckwin
+        run: move dist ${{ github.workspace }}\ckwin
         shell: cmd
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: k95-ow1.9-x86-nt350
-          path: ${{ github.workspace }}\ckwin
+          path: ${{github.workspace}}\ckwin
           if-no-files-found: error
           retention-days: 7
 
@@ -1265,22 +1208,22 @@ jobs:
             ${{github.workspace}}\info-zip
             ${{github.workspace}}\toolkit
           key: openzinc1+infozip+os2tk45
-          nocache: ${{ vars.NOCACHE }}
+          nocache: ${{vars.NOCACHE}}
       - name: Get dependencies
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}
         run: |
           mkdir zinc
           cd zinc
-          wget ${{ env.OPENZINC }} -outfile OZ1.zip
+          wget ${{env.OPENZINC}} -outfile OZ1.zip
           7z x OZ1.zip
           cd ..
           
           cd info-zip
-          wget ${{ env.INFOZIP_FTP }}win32/zip300xn.zip -outfile zip.zip
+          wget ${{env.INFOZIP_FTP}}win32/zip300xn.zip -outfile zip.zip
           mkdir os2
           cd os2
-          wget ${{ env.INFOZIP_FTP }}os2/unz600.exe -outfile unzip.zip
+          wget ${{env.INFOZIP_FTP}}os2/unz600.exe -outfile unzip.zip
           7z x unzip.zip
           move 32-bit\*
           del unzip.zip
@@ -1289,7 +1232,7 @@ jobs:
           cd ..
           dir
           
-          wget ${{ env.OS2TK45 }} -outfile os2tk45.zip
+          wget ${{env.OS2TK45}} -outfile os2tk45.zip
           7z x os2tk45.zip
           del os2tk45.zip
           move toolkit\os2tk45\h toolkit\os2tk45\include
@@ -1319,19 +1262,13 @@ jobs:
           call mkos2.bat
           
           call mkdist-os2.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.OS2_BUILD_OUTPUTS}}) do (
-            if not exist dist-os2\%%y echo Build result not found: %%y
-            if not exist dist-os2\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist-os2\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Kermit/2 Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist-os2'
+          list: ${{env.OS2_BUILD_OUTPUTS}}
+
       - name: Dialer Build
         env:
           ROOT: ${{ github.workspace }}
@@ -1347,50 +1284,50 @@ jobs:
         run: mkdist-os2.bat
         shell: cmd
       - name: Prepare Artifact
-        working-directory: ${{ github.workspace }}\kermit\k95
+        working-directory: ${{github.workspace}}\kermit\k95
         run: |
           move ..\dialer\dist-os2\* dist-os2\
-          move dist-os2 ${{ github.workspace }}\ckos2
-          cd ${{ github.workspace }}\ckos2
+          move dist-os2 ${{github.workspace}}\ckos2
+          cd ${{github.workspace}}\ckos2
           
           echo Making full distribution archive K2PACK.EXE
-          ${{ github.workspace }}\info-zip\zip.exe -r -5 -v -o k2pack * -x setup.exe
-          copy /b ${{ github.workspace }}\info-zip\os2\unzipsfx.exe + k2pack.zip K2PACK.EXE
+          ${{github.workspace}}\info-zip\zip.exe -r -5 -v -o k2pack * -x setup.exe
+          copy /b ${{github.workspace}}\info-zip\os2\unzipsfx.exe + k2pack.zip K2PACK.EXE
           del k2pack.zip
-          mkdir ${{ github.workspace }}\dist-full
-          move K2PACK.EXE ${{ github.workspace }}\dist-full\
-          copy setup.exe ${{ github.workspace }}\dist-full\
+          mkdir ${{github.workspace}}\dist-full
+          move K2PACK.EXE ${{github.workspace}}\dist-full\
+          copy setup.exe ${{github.workspace}}\dist-full\
           
           echo Making minimal distribution
           REM This is basically everything but the dialer. Its small enough to fit on a
           REM single floppy disk alongisde setup.exe
-          ${{ github.workspace }}\info-zip\zip.exe -r -5 -v -o k2pack-mini k2.* k2clip.exe cko32*.dll p*.dll pcfonts.dll rlogin.exe telnetpm*.exe textps.exe docs download eas icons keymaps phones printer public scripts tmp users
-          copy /b ${{ github.workspace }}\info-zip\os2\unzipsfx.exe + k2pack-mini.zip K2PACK.EXE
+          ${{github.workspace}}\info-zip\zip.exe -r -5 -v -o k2pack-mini k2.* k2clip.exe cko32*.dll p*.dll pcfonts.dll rlogin.exe telnetpm*.exe textps.exe docs download eas icons keymaps phones printer public scripts tmp users
+          copy /b ${{github.workspace}}\info-zip\os2\unzipsfx.exe + k2pack-mini.zip K2PACK.EXE
           del k2pack-mini.zip
-          mkdir ${{ github.workspace }}\dist-mini
-          move K2PACK.EXE ${{ github.workspace }}\dist-mini\
-          copy setup.exe ${{ github.workspace }}\dist-mini\
+          mkdir ${{github.workspace}}\dist-mini
+          move K2PACK.EXE ${{github.workspace}}\dist-mini\
+          copy setup.exe ${{github.workspace}}\dist-mini\
         shell: cmd
 
       - name: Upload Zip Artifact
         uses: actions/upload-artifact@v4
         with:
           name: k2-ow1.9-x86
-          path: ${{ github.workspace }}\ckos2
+          path: ${{github.workspace}}\ckos2
           if-no-files-found: error
           retention-days: 7
       - name: Upload Full Installer Artifact
         uses: actions/upload-artifact@v4
         with:
           name: k2-full-install
-          path: ${{ github.workspace }}\dist-full
+          path: ${{github.workspace}}\dist-full
           if-no-files-found: error
           retention-days: 7
       - name: Upload Minimal Installer Artifact
         uses: actions/upload-artifact@v4
         with:
           name: k2-mini-install
-          path: ${{ github.workspace }}\dist-mini
+          path: ${{github.workspace}}\dist-mini
           if-no-files-found: error
           retention-days: 7
 
@@ -1401,11 +1338,13 @@ jobs:
   # from the Visual C++ 2003 Toolkit, the Windows Server 2003 SP1 Platform SDK
   # as described here:
   # https://epics.anl.gov/base/msvctk.php
-  Build-VCT2003-PSDK2003:
+  Build-VS2003-PSDK2003:
     runs-on: windows-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs]
     strategy:
       matrix:
+        arch:
+          - 'x86'
         # Do a build using ancient and insecure libraries like libsrp, k4w
         # and SuperLAT? This is *purely* for checking support with these
         # otherwise rarely tested build options doesn't get accidentlaly
@@ -1424,7 +1363,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-          toolset: 14.0
 
         # Cache the Visual C++ 2003 Toolkit & Platform SDK because it takes
         # quite a while to download and decompress and I don't want my FTP
@@ -1437,7 +1375,7 @@ jobs:
             ${{github.workspace}}\vct2003
             ${{github.workspace}}\tools\jom
           key: vct2003+psdk2003sp1+jom
-          nocache: ${{ vars.NOCACHE }}
+          nocache: ${{vars.NOCACHE}}
 
       - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003
         if: steps.cache-vct2003.outputs.cache-hit != 'true'
@@ -1516,24 +1454,20 @@ jobs:
           dir srp-2.1.2
           
           # and openssl
-          cd openssl
           wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz -outfile openssl-1.0.1u.tar.gz
           7z x openssl-1.0.1u.tar.gz
-          7z x openssl-1.0.1u.tar
+          7z x openssl-1.0.1u.tar -oopenssl
           del openssl-1.0.1u.tar
           del openssl-1.0.1u.tar.gz
-          ren openssl-1.0.1u 1.0.1u
-          dir 1.0.1u
-          cd ..
+          ren openssl\openssl-1.0.1u openssl\current
+          dir openssl\current
                    
-          # and kerberos for windows 2.6.0 (pre-built with Visual C++ 2003 Professional)
-          cd kerberos
+          # and kerberos for windows 2.6.5 (pre-built with Visual C++ 2003 Professional)
           wget https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip -outfile kfw-2.6-final-vc2003.zip
-          7z x kfw-2.6-final-vc2003.zip
+          7z x kfw-2.6-final-vc2003.zip -okerberos
           del kfw-2.6-final-vc2003.zip
-          ren kfw-2.6-final kfw-2.6.5
-          dir kfw-2.6.5
-          cd ..
+          ren kerberos\kfw-2.6-final kerberos\current
+          dir kerberos\current
           
           # SuperLAT Headers
           mkdir superlat
@@ -1541,15 +1475,13 @@ jobs:
           wget https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip -outfile slatfio.zip
           7z x slatfio.zip
           mkdir include
-          cd include
-          copy ..\TESTSVC\LATIOC.H
-          copy ..\TESTSVC\NETTYPES.H
-          copy ..\TESTSVC\NTDDTDI.H
-          copy ..\TESTSVC\PACKOFF.H
-          copy ..\TESTSVC\PACKON.H
-          copy ..\TESTSVC\TDI.H
-          copy ..\TESTSVC\TIHDR.H
-          cd ..
+          copy TESTSVC\LATIOC.H include\latioc.h
+          copy TESTSVC\NETTYPES.H include\nettypes.h
+          copy TESTSVC\NTDDTDI.H include\ntddtdi.h
+          copy TESTSVC\PACKOFF.H include\packoff.h
+          copy TESTSVC\PACKON.H include\packon.h
+          copy TESTSVC\TDI.H include\tdi.h
+          copy TESTSVC\TIHDR.H include\tihdr.h
           Remove-Item -Recurse -Force TESTSVC
           Remove-Item -Recurse -Force CONN
           del README.1ST
@@ -1663,20 +1595,12 @@ jobs:
           call mk.bat
           
           call mkdist.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          REM ctl3dins.exe
-          for %%y in (k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: 'k95.exe iksd.exe iksdsvc.exe k95d.exe rlogin.exe telnet.exe textps.exe k95g.exe p95.dll'
 
       - name: Full Build Non-standard configs
         env:
@@ -1715,55 +1639,37 @@ jobs:
           
           mkdir dist-misc
           move *.exe dist-misc          
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (cknkui.exe) do (
-            if not exist dist-misc\%%y echo Build result not found: %%y
-            if not exist dist-misc\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist-misc\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
-
-      - name: Check additional legacy outputs
+      - name: Full Build Non-standard configs Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist-misc'
+          list: 'cknkui.exe'
+      - name: Additional legacy outputs Files Check
         if: matrix.legacy_dependencies == 'yes'
-        working-directory: ${{ github.workspace }}\kermit\k95
-        run: |
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          REM TODO: srp-tconf.exe srp-passwd.exe
-          REM TODO: Kerberos bits
-          for %%y in (k95crypt.dll) do (
-            if not exist dist\%%y echo Build result not found: %%y
-            if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-            if not exist dist\%%y set FAILED=yes
-          )
-
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing legacy build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
-        shell: cmd
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          # TODO: srp-tconf.exe srp-passwd.exe
+          # TODO: Kerberos bits
+          list: 'k95crypt.dll'
 
       - name: Fetch CA Certs bundle
         if: matrix.legacy_dependencies == 'yes'
         uses: actions/download-artifact@v4
         with:
           name: ca_certs
-          path: ${{ github.workspace }}\kermit\k95\dist
+          path: ${{github.workspace}}\kermit\k95\dist
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
         with:
           name: markdown-docs
-          path: ${{ github.workspace }}\kermit\k95\dist
+          path: ${{github.workspace}}\kermit\k95\dist
 
       # Builds with Visual C++ 2003 include SSH so don't need the SSH Readme
       - name: Remove SSH Readme
-        run: del ${{ github.workspace }}\kermit\k95\dist\ssh-readme.html
+        run: del ${{github.workspace}}\kermit\k95\dist\ssh-readme.html
         shell: cmd
 
       - name: Prepare Artifact
@@ -1777,7 +1683,7 @@ jobs:
         if: matrix.legacy_dependencies == 'no'
         with:
           name: k95-vc7.1-x86
-          path: ${{ github.workspace }}\ckwin
+          path: ${{github.workspace}}\ckwin
           if-no-files-found: error
           retention-days: 7
       - name: Upload Artifact (extra)
@@ -1785,7 +1691,7 @@ jobs:
         if: matrix.legacy_dependencies == 'no'
         with:
           name: k95-vc7.1-x86-extra
-          path: ${{ github.workspace }}\ckwin-extra
+          path: ${{github.workspace}}\ckwin-extra
           if-no-files-found: error
           retention-days: 7
       - name: Upload Artifact
@@ -1793,7 +1699,7 @@ jobs:
         if: matrix.legacy_dependencies == 'yes'
         with:
           name: k95-vc7.1-x86-insecure
-          path: ${{ github.workspace }}\ckwin
+          path: ${{github.workspace}}\ckwin
           if-no-files-found: error
           retention-days: 7
       - name: Upload Artifact (extra)
@@ -1801,7 +1707,7 @@ jobs:
         if: matrix.legacy_dependencies == 'yes'
         with:
           name: k95-vc7.1-x86-insecure-extra
-          path: ${{ github.workspace }}\ckwin-extra
+          path: ${{github.workspace}}\ckwin-extra
           if-no-files-found: error
           retention-days: 7
 
@@ -1811,9 +1717,13 @@ jobs:
   ##############################################################################
   # This uses Visual C++ 2005
   #
-  Build-PSDK2003SP1-IA64:
+  Build-VS2005-PSDK2003SP1:
     runs-on: windows-latest
     needs: [Prepare-Docs, Build-Wart]
+    strategy:
+      matrix:
+        arch:
+          - 'ia64'
 
     steps:
       - uses: actions/checkout@v4
@@ -1826,7 +1736,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-          toolset: 14.0
 
         # Cache the Visual C++ 2003 Toolkit & Platform SDK because it takes
         # quite a while to download and decompress and I don't want my FTP
@@ -1842,7 +1751,7 @@ jobs:
             ${{github.workspace}}\libdes\Debug
             ${{github.workspace}}\tools
           key: vct2003+psdk2003sp1+libdes+v2+jom1
-          nocache: ${{ vars.NOCACHE }}
+          nocache: ${{vars.NOCACHE}}
       - name: Get Visual C++ 2003 Toolkit + Platform SDK 2003 + libdes
         if: steps.cache-vct2003.outputs.cache-hit != 'true'
         run: |
@@ -1934,29 +1843,22 @@ jobs:
           call mk.bat
           
           call mkdist.bat
-          
-          REM Check outputs
-          set MISSING_BUILD_RESULTS=
-          for %%y in (${{env.STANDARD_BUILD_OUTPUTS}}) do (
-          if not exist dist\%%y echo Build result not found: %%y
-          if not exist dist\%%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
-          if not exist dist\%%y set FAILED=yes
-          )
-  
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
-          if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
-          if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
         shell: cmd
+      - name: Full Build Files Check
+        uses: "./.github/actions/files-check"
+        with:
+          path: 'kermit\k95\dist'
+          list: ${{env.STANDARD_BUILD_OUTPUTS}}
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
         with:
           name: markdown-docs
-          path: ${{ github.workspace }}\kermit\k95\dist
+          path: ${{github.workspace}}\kermit\k95\dist
 
       # Builds with Visual C++ 2005 don't include SSH so don't need the SSH Readme
       - name: Remove SSH Readme
-        run: del ${{ github.workspace }}\kermit\k95\dist\ssh-readme.html
+        run: del ${{github.workspace}}\kermit\k95\dist\ssh-readme.html
         shell: cmd
 
       - name: Prepare Artifact
@@ -1968,7 +1870,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: k95-vc8-ia64
-          path: ${{ github.workspace }}\ckwin
+          path: ${{github.workspace}}\ckwin
           if-no-files-found: error
           retention-days: 7
 
@@ -1981,11 +1883,16 @@ jobs:
   Build-MinGW64-Linux:
     runs-on: ubuntu-latest
     needs: [Get-CACerts-Bundle, Prepare-Docs]
+    strategy:
+      matrix:
+        arch:
+          - 'x64'
 
     steps:
       - uses: actions/checkout@v4
       - name: Select env configuration
-        run: echo "CK_OPENSSL_VERSION=${{ env.OPENSSL_VERSION }}" >> "$GITHUB_ENV"
+        id: cfg
+        run: echo "openssl=${{env.OPENSSL_VERSION}}" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Install MinGW-w64
@@ -1999,23 +1906,8 @@ jobs:
             ${{github.workspace}}/openssl/current
             ${{github.workspace}}/libssh
             ${{github.workspace}}/zlib
-          key: deps-openssl-${{env.CK_OPENSSL_VERSION}}-parallel-v1
-          nocache: ${{ vars.NOCACHE }}
-
-      - name: Get dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir -p openssl
-          cd openssl
-          wget https://github.com/openssl/openssl/releases/download/openssl-${{env.CK_OPENSSL_VERSION}}/openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          tar zxf openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          rm openssl-${{env.CK_OPENSSL_VERSION}}.tar.gz
-          mv openssl-${{env.CK_OPENSSL_VERSION}} current
-          ls -l current
-
-          sudo cpan -i Text::Template
-        shell: bash
+          key: deps-openssl-${{steps.cfg.outputs.openssl}}-parallel
+          nocache: ${{vars.NOCACHE}}
 
       - name: Build OpenSSL
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
@@ -2050,24 +1942,24 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ca_certs
-          path: ${{ github.workspace }}/ckwin
+          path: ${{github.workspace}}/ckwin
 
       - name: Fetch Docs
         uses: actions/download-artifact@v4
         with:
           name: markdown-docs
-          path: ${{ github.workspace }}/ckwin
+          path: ${{github.workspace}}/ckwin
 
       # We're not currently building libssh on linux so remove the ssh readme
       - name: Remove SSH Readme
-        run: rm ${{ github.workspace }}/ckwin/ssh-readme.html
+        run: rm ${{github.workspace}}/ckwin/ssh-readme.html
         shell: bash
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: k95-mingw64-cross
-          path: ${{ github.workspace }}/ckwin
+          path: ${{github.workspace}}/ckwin
           if-no-files-found: error
 
   ##############################################################################
@@ -2083,7 +1975,7 @@ jobs:
   # This also isn't anywhere near a perfect test. Just because this builds
   # doesn't mean we haven't broken something on OpenVMS or Solaris or AIX
   # or Digital UNIX or BSD or MacOS X or any number of other platforms.
-  C-Kermit-Linux-Build-Test:
+  Test-C-Kermit-Linux-Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -2102,12 +1994,12 @@ jobs:
           path: |
             ${{github.workspace}}/ckermit
             ${{github.workspace}}/openssl
-          key: ${{ runner.os }}-ckermit${{ env.C_KERMIT_VERSION }}-r1
-          nocache: ${{ vars.NOCACHE }}
+          key: ${{runner.os}}-C-Kermit-${{env.C_KERMIT_VERSION}}-r1
+          nocache: ${{vars.NOCACHE}}
       - name: Get C-Kermit ${{env.C_KERMIT_VERSION}}
         if: steps.cache-code.outputs.cache-hit != 'true'
         run: |
-          wget ${{ env.C_KERMIT_CODE }} -O ckermit.tar.gz
+          wget ${{env.C_KERMIT_CODE}} -O ckermit.tar.gz
           mkdir -p ckermit
           pushd ckermit
           tar -zxvf ../ckermit.tar.gz

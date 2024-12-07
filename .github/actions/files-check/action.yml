@@ -1,0 +1,26 @@
+name: check-file-list
+description: 'Get cache status'
+
+inputs:
+  path:
+    description: 'path for check'
+    default: ''
+  list:
+    description: 'file list for check'
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Check file list
+      working-directory: ${{inputs.path}}
+      run: |
+        set MISSING_BUILD_RESULTS=
+        for %%y in (${{inputs.list}}) do (
+          if not exist %%y echo Build result not found: %%y
+          if not exist %%y set MISSING_BUILD_RESULTS=%MISSING_BUILD_RESULTS% %%y
+          if not exist %%y set FAILED=yes
+        )
+        if "%MISSING_BUILD_RESULTS%" NEQ "" echo Missing build outputs: %MISSING_BUILD_RESULTS%
+        if "%MISSING_BUILD_RESULTS%" NEQ "" echo One or more expected outputs are missing - failing build
+        if "%MISSING_BUILD_RESULTS%" NEQ "" exit /b 1
+      shell: cmd

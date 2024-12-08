@@ -1,0 +1,60 @@
+name: cache-tools-build
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+#
+# JOM: https://download.qt.io/official_releases/jom/jom.zip
+#
+# Use JOM instead of nmake for parallel builds
+# Make tool for openssl builds. Jom works fine with OpenSSL 1.1.1 but is broken with 3.0.10.
+# If jom works ideally we use that as it results in shorter build times.
+#
+# NASM: https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+#
+runs:
+  using: composite
+  steps:
+    - name: Cache legacy dependencies
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-build
+      with:
+        path: |
+          ${{github.workspace}}\tools
+        key: all-build-tools
+    - run: mkdir -p tools/jom
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      shell: bash
+    - name: Get and unpack nasm
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      run: |
+        curl -LsS -o nasm.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+        7z x nasm.zip -otools
+        rm -f nasm.zip
+        mv tools/nasm-2.15.05 tools/nasm
+        echo "content of tools/nasm"
+        ls -l tools/nasm
+      shell: bash       
+    - name: Get and unpack jom
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      run: |
+        curl -LsS -o jom.zip https://download.qt.io/official_releases/jom/jom.zip
+        7z x jom.zip -otools/jom
+        rm -f jom.zip
+        echo "content of tools/jom"
+        ls -l tools/jom
+      shell: bash

@@ -1,0 +1,40 @@
+name: cache-ckermit
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache dependencies
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-ckermit
+      with:
+        path: |
+          ${{github.workspace}}/ckermit
+          ${{github.workspace}}/openssl
+        key: test-${{runner.os}}-ckermit-${{env.C_KERMIT_VERSION}}-r1
+    - name: Get C-Kermit ${{env.C_KERMIT_VERSION}}
+      if: steps.cache-ckermit.outputs.cache-hit != 'true'
+      run: |
+        curl -LsS -o ckermit.tar.gz ${{env.C_KERMIT_CODE}}
+        mkdir -p ckermit
+        pushd ckermit
+        tar -zxvf ../ckermit.tar.gz
+        popd
+        rm -f ckermit.tar.gz
+      shell: bash

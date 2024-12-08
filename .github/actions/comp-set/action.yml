@@ -1,0 +1,50 @@
+name: comp-set
+description: 'setup msvc environment'
+#
+inputs:
+  path:
+    description: 'path list to add to PATH'
+    default: ''
+    required: false
+    type: string
+  include:
+    description: 'item list to add to INCLUDE'
+    default: ''
+    required: false
+    type: string
+  lib:
+    description: 'item list to add to LIB'
+    default: ''
+    required: false
+    type: string
+#
+runs:
+  using: composite
+  steps:
+    - name: Check file list
+      run: |
+        # we only want current compiler for cvtres.exe
+        # add old compiler on the PATH before current compiler
+        items=('${{inputs.path}}')
+        for ((i=${#items[@]}-1; i>=0; i--))
+        do
+          echo "${{github.workspace}}\\${items[$i]}">> "$GITHUB_PATH"
+        done
+        # Don't want to pick up headers or libraries from current
+        # version of Visual C++ which is also on here
+        items=('${{inputs.include}}')
+        for ((i=${#items[@]}-1; i>=0; i--))
+        do
+          echo "INCLUDE=${{github.workspace}}\\${items[$i]}">> "$GITHUB_ENV"
+        done
+        items=('${{inputs.lib}}')
+        for ((i=${#items[@]}-1; i>=0; i--))
+        do
+          echo "LIB=${{github.workspace}}\\${items[$i]}">> "$GITHUB_ENV"
+        done
+        echo "***GITHUB_ENV*****************************************"
+        cat "$GITHUB_ENV"
+        echo "***GITHUB_PATH****************************************"
+        cat "$GITHUB_PATH"
+        echo "******************************************************"
+      shell: bash

@@ -1,0 +1,55 @@
+name: openssl-get
+description: 'Download openssl'
+#
+# Expected filename: https://github.com/openssl/openssl/releases/download/openssl-3.0.4/openssl-3.0.4.tar.gz
+# Expected filename: https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz
+#
+# OpenSSL 3.0 and 3.1 aren't properly compatible with Windows on ARM, so we've
+# got to use 3.2 or newer for that.
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  openssl:
+    description: 'OpenSSL version'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Get URL
+      id: cfg
+      run: |
+        if [[ "${{inputs.openssl}}" = "1.0.1u" ]]; then
+          echo "url=https://github.com/openssl/openssl/releases/download/OpenSSL_1_0_1u/openssl-1.0.1u.tar.gz" >> "$GITHUB_OUTPUT"
+        else
+          echo "url=https://github.com/openssl/openssl/releases/download/openssl-${{inputs.openssl}}/openssl-${{inputs.openssl}}.tar.gz" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+    - name: download and unpack
+      run: |
+        curl -LsS -o openssl-${{inputs.openssl}}.tar.gz ${{steps.cfg.outputs.url}}
+        7z x openssl-${{inputs.openssl}}.tar.gz
+        7z x openssl-${{inputs.openssl}}.tar -oopenssl
+        rm -f openssl-${{inputs.openssl}}.tar openssl-${{inputs.openssl}}.tar.gz
+        mv openssl/openssl-${{inputs.openssl}} openssl/current
+        echo "content of openssl/current"
+        ls -l openssl/current
+      shell: bash
+    - name: Install OpenSSL perl modules
+      if: runner.os == 'Windows'
+      run: cpan -i Text::Template
+      shell: cmd       
+    - name: Install OpenSSL perl modules
+      if: runner.os != 'Windows'
+      run: sudo cpan -i Text::Template
+      shell: bash       

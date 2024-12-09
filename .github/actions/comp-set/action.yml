@@ -1,0 +1,47 @@
+name: comp-set
+description: 'setup msvc environment'
+#
+inputs:
+  path:
+    description: 'path list to add to PATH'
+    default: ''
+    required: false
+    type: string
+  include:
+    description: 'item list to add to INCLUDE'
+    default: ''
+    required: false
+    type: string
+  lib:
+    description: 'item list to add to LIB'
+    default: ''
+    required: false
+    type: string
+#
+runs:
+  using: composite
+  steps:
+    - name: Check file list
+      run: |
+        rem we only want current compiler for cvtres.exe
+        rem add old compiler on the PATH before current compiler
+        for /f "tokens=1,2"  %%a in ("${{inputs.path}}") do (
+          if not "%%b" == "" echo ${{github.workspace}}\%%b>> "%GITHUB_PATH%"
+          if not "%%a" == "" echo ${{github.workspace}}\%%a>> "%GITHUB_PATH%"
+        )
+        rem Don't want to pick up headers or libraries from current
+        rem version of Visual C++ which is also on here
+        for /f "tokens=1,2"  %%a in ("${{inputs.include}}") do (
+          if not "%%b" == "" echo INCLUDE=${{github.workspace}}\%%a;${{github.workspace}}\%%b>> "%GITHUB_ENV%"
+          if "%%b" == "" if not "%%a" == "" echo INCLUDE=${{github.workspace}}\%%a>> "%GITHUB_ENV%"
+        )
+        for /f "tokens=1,2"  %%a in ("${{inputs.lib}}") do (
+          if not "%%b" == "" echo LIB=${{github.workspace}}\%%a;${{github.workspace}}\%%b>> "%GITHUB_ENV%"
+          if "%%b" == "" if not "%%a" == "" echo LIB=${{github.workspace}}\%%a>> "%GITHUB_ENV%"
+        )
+        echo "***GITHUB_ENV*****************************************"
+        type "%GITHUB_ENV%"
+        echo "***GITHUB_PATH****************************************"
+        type "%GITHUB_PATH%"
+        echo "******************************************************"
+      shell: cmd

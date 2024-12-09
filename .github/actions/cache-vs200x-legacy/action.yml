@@ -1,0 +1,79 @@
+name: cache-vs200x-legacy
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache legacy dependencies
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-legacy
+      with:
+        path: |
+          ${{github.workspace}}\srp-2.1.2
+          ${{github.workspace}}\openssl\current
+          ${{github.workspace}}\kerberos\current
+          ${{github.workspace}}\superlat
+        key: vs200x-${{inputs.arch}}+libsrp+openssl-1.0.1u+superlat+kfw-2.6.5-ver2
+    - name: Get and unpack kerberos
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      uses: "./.github/actions/kerberos-get"
+      with:
+        id: 'legacy'
+    - name: Get and unpack openssl
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openssl-get"
+      with:
+        openssl: '1.0.1u'
+    - name: Get and unpack libsrp
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libsrp-get"
+    - name: Get and unpack superlat headers
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      uses: "./.github/actions/superlat-get"
+
+    - name: Build openssl
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      working-directory: openssl/current
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\nasm
+        perl Configure VC-WIN32 enable-static-engine
+                 
+        call ms\do_ms.bat
+        
+        REM adjust the makefile to statically link
+        sed -i "s/\/MD /\/MT /g" ms\ntdll.mak
+        
+        nmake -f ms\ntdll.mak
+      shell: cmd
+
+    - name: Build libsrp
+      if: steps.cache-legacy.outputs.cache-hit != 'true'
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: srp-2.1.2
+      run: |
+        set openssl_root_override=${{github.workspace}}\openssl\current
+        set srp_root_override=${{github.workspace}}\srp-2.1.2
+        
+        set CKB_STATIC_CRT_NT=yes
+
+        call ${{github.workspace}}\setenv.bat
+
+        call mknt.bat
+      shell: cmd

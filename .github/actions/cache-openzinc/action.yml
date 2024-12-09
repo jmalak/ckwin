@@ -1,0 +1,32 @@
+name: cache-openzinc
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache openzinc
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-openzinc
+      with:
+        path: |
+          ${{github.workspace}}\zinc
+        key: all-openzinc
+    - name: Get and unpack openzinc
+      if: steps.cache-openzinc.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openzinc-get"

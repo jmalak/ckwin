@@ -1,0 +1,42 @@
+name: rexx-get
+description: 'Download rexx'
+#
+# REGINA_REXX: https://ftp.zx.net.nz/pub/dev/rexx/regina/3.9.6/regina396.zip
+# old: RexxRE: Regular expressions for rexx!
+# REXXRE: http://home.interlog.com/~ptjm/rexxre101.zip
+# Should the original ever go down (its not been updated in over 20 years),
+# a mirror is here:
+# old: REXXRE: https://ftp.zx.net.nz/pub/dev/rexx/ptjm/rexxre101.zip
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and unpack REXX
+      run: |
+        curl -LsS -A "Wget" -o regina.tar.gz https://sourceforge.net/projects/regina-rexx/files/regina-rexx/${{env.REGINA_VERSION}}/regina-rexx-${{env.REGINA_VERSION}}.tar.gz/download
+        7z x regina.tar.gz
+        7z x regina.tar -orexx
+        rm -f regina.tar regina.tar.gz
+        mv rexx/regina-rexx-${{env.REGINA_VERSION}} rexx/regina
+        echo "content of rexx/regina"
+        ls -l rexx/regina
+      shell: bash       
+    - name: download and unpack REXXRE
+      run: |
+        curl -LsS -o rexxre.zip http://home.interlog.com/~ptjm/rexxre101.zip
+        7z x rexxre.zip -orexx
+        rm -f rexxre.zip
+        echo "content of rexx/rexxre"
+        ls -l rexx/rexxre
+      shell: bash       

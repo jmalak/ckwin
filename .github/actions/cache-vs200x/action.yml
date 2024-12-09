@@ -1,0 +1,32 @@
+name: cache-vs200x
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache VS200X
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-vs200x
+      with:
+        path: |
+          ${{github.workspace}}\vs200x
+        key: all-vs200x+psdk2003sp1
+    - name: Get and unpack Visual C++ 2003/2005 Toolkit + Platform SDK 2003
+      if: steps.cache-vs200x.outputs.cache-hit != 'true'
+      uses: "./.github/actions/vs200x-get"

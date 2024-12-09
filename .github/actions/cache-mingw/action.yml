@@ -1,0 +1,55 @@
+name: cache-mingw-deps
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+  openssl:
+    description: 'OpenSSL version'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache Dependencies
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-mingw
+      with:
+        path: |
+          ${{github.workspace}}/openssl/current
+          ${{github.workspace}}/libssh
+          ${{github.workspace}}/zlib
+        key: mingw-${{inputs.arch}}+openssl-${{inputs.openssl}}
+
+    - name: Get and unpack openssl
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openssl-get"
+      with:
+        openssl: ${{inputs.openssl}}
+
+    - name: Build openssl
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
+      env:
+        CXX: /usr/bin/x86_64-w64-mingw32-c++
+        CC: /usr/bin/x86_64-w64-mingw32-gcc
+        RC: /usr/bin/x86_64-w64-mingw32-windres
+      working-directory: openssl/current
+      run: |
+        perl Configure mingw64
+        make depend
+        make -j 2
+      shell: bash

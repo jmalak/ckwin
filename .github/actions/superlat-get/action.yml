@@ -1,0 +1,39 @@
+name: superlat-get
+description: 'Download superlat'
+#
+# Expected filename: https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - run: mkdir -p superlat/include
+      shell: bash
+    - name: download and unpack
+      run: |
+        curl -LsS -o slatfio.zip https://web.archive.org/web/20000929005919if_/http://www.meridian.com:80/slatfio.zip
+        7z x slatfio.zip -osuperlat
+        rm -f slatfio.zip
+        rm -rf superlat/CONN
+        rm -f superlat/README.1ST
+        cp superlat/TESTSVC/LATIOC.H superlat/include/latioc.h
+        cp superlat/TESTSVC/NETTYPES.H superlat/include/nettypes.h
+        cp superlat/TESTSVC/NTDDTDI.H superlat/include/ntddtdi.h
+        cp superlat/TESTSVC/PACKOFF.H superlat/include/packoff.h
+        cp superlat/TESTSVC/PACKON.H superlat/include/packon.h
+        cp superlat/TESTSVC/TDI.H superlat/include/tdi.h
+        cp superlat/TESTSVC/TIHDR.H superlat/include/tihdr.h
+        rm -rf superlat/TESTSVC
+        echo "content of superlat"
+        ls -l superlat
+      shell: bash       

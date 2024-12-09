@@ -1,0 +1,329 @@
+name: cache-vsxx
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  vsversion:
+    description: 'VS version'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+  openssl:
+    description: 'OpenSSL version'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache Optional Dependencies
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-vsxx
+      with:
+        path: |
+          ${{github.workspace}}\zlib
+          ${{github.workspace}}\openssl\current
+          ${{github.workspace}}\libssh\current
+          ${{github.workspace}}\libssh\current-gssapi
+          ${{github.workspace}}\libdes\des
+          ${{github.workspace}}\libdes\Release
+          ${{github.workspace}}\libdes\Debug
+          ${{github.workspace}}\kerberos\current
+          ${{github.workspace}}\rexx\regina
+          ${{github.workspace}}\rexx\rexxre
+        key: vs${{inputs.vsversion}}-${{inputs.arch}}+zlib-${{env.ZLIB_VERSION}}+openssl-${{inputs.openssl}}+${{env.OPENSSL_MAKE}}+libssh-${{env.LIBSSH_VERSION}}+dynamic+regina-${{env.REGINA_VERSION}}+rexxre+ver3
+    - name: Get and unpack zlib
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/zlib-get"
+    - name: Get and unpack libssh
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libssh-get"
+    - name: Get and unpack libdes
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libdes-get"
+    - name: Get and unpack openssl
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/openssl-get"
+      with:
+        openssl: ${{inputs.openssl}}
+    - name: Get and unpack kerberos
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/kerberos-get"
+      with:
+        id: ${{inputs.arch}}
+    - name: Get and unpack rexx
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      uses: "./.github/actions/rexx-get"
+
+    - name: Build zlib (x86/x86-64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x86' || inputs.arch == 'x64')
+      working-directory: zlib
+      run: |
+        cmake .
+        nmake -f win32\Makefile.msc
+      shell: cmd
+
+    - name: Build zlib (arm32/arm64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x64_arm' || inputs.arch == 'x64_arm64')
+      working-directory: zlib
+      run: |
+        cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
+        nmake
+      shell: cmd
+
+    - name: Build openssl (x86)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x86'
+      working-directory: openssl/current
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+        echo %PATH%
+
+        perl Configure VC-WIN32 zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}
+        
+        REM The linker by default marks the subsystem version too high for XP
+        REM and there isn't a way to fix that from the configure script, so
+        REM do it the hard way.
+        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
+        
+        ${{env.OPENSSL_MAKE}}
+      shell: cmd
+
+    - name: Build openssl (x86-64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64'
+      working-directory: openssl/current
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+        echo %PATH%
+
+        perl Configure VC-WIN64A zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}
+        
+        REM The linker by default marks the subsystem version too high for XP
+        REM and there isn't a way to fix that from the configure script, so
+        REM do it the hard way.
+        sed -i "s/subsystem:console/subsystem:console,5.01/g" makefile
+        
+        ${{env.OPENSSL_MAKE}}
+      shell: cmd
+
+    - name: Build openssl (ARM)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64_arm'
+      working-directory: openssl/current
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+        echo %PATH%
+        perl Configure VC-WIN32-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib ${{env.OPENSSL_EXTRA_BUILD_FLAGS}} 
+        
+        ${{env.OPENSSL_MAKE}}
+      shell: cmd
+
+    - name: Build openssl (ARM-64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64_arm64'
+      working-directory: openssl/current
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom;${{github.workspace}}\tools\nasm
+        echo %PATH%
+
+        perl Configure VC-WIN64-ARM zlib-dynamic --with-zlib-include=${{github.workspace}}\zlib ${{env.OPENSSL_EXTRA_BUILD_FLAGS}}    
+        ${{env.OPENSSL_MAKE}}
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, Vista+)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x86' || inputs.arch == 'x64')
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libssh
+      run: |
+        set openssl_root_override=${{github.workspace}}\openssl\current
+        set zlib_root_override=${{github.workspace}}\zlib
+
+        call ${{github.workspace}}\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /C - clean build
+        REM /R - release build
+        REM /W - build for Windows Vista or newer (not XP)
+        
+        call build.bat /M out /C /R /W current
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, Vista+, GSSAPI)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x86' || inputs.arch == 'x64')
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libssh
+      run: |
+        set openssl_root_override=${{github.workspace}}\openssl\current
+        set zlib_root_override=${{github.workspace}}\zlib
+        set k4w_root_override=${{github.workspace}}\kerberos\current\Kerberos
+
+        call ${{github.workspace}}\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N g" produces "sshg.dll" and "sshg.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /W - build for Windows Vista or newer (not XP)
+        
+        call build.bat /M out /N g /G /C /R /W current
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, XP)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x86' || inputs.arch == 'x64') && (inputs.vsversion == '2015' || inputs.vsversion == '2017' || inputs.vsversion == '2019')
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libssh
+      run: |
+        set openssl_root_override=${{github.workspace}}\openssl\current
+        set zlib_root_override=${{github.workspace}}\zlib
+
+        call ${{github.workspace}}\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N x" produces "sshx.dll" and "sshx.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /X - build for Windows XP (removes a low impact security fix in 0.10.6, and disables thread local storage)        
+        
+        call build.bat /M out /N x /C /R /X current    
+      shell: cmd
+
+    - name: Build libssh (x86/x86-64, XP, GSSAPI)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && (inputs.arch == 'x86' || inputs.arch == 'x64') && (inputs.vsversion == '2015' || inputs.vsversion == '2017' || inputs.vsversion == '2019')
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libssh
+      run: |
+        set openssl_root_override=${{github.workspace}}\openssl\current
+        set zlib_root_override=${{github.workspace}}\zlib
+        set k4w_root_override=${{github.workspace}}\kerberos\current\Kerberos
+
+        call ${{github.workspace}}\setenv.bat
+        
+        REM /M - output directory for binaries and libraries (Move to)
+        REM /N - Name suffix  (eg, "/N xg" produces "sshxg.dll" and "sshxg.lib")
+        REM /G - GSSAPI build
+        REM /C - clean build
+        REM /R - release build
+        REM /X - build for Windows XP (removes a low impact security fix in 0.10.6, and disables thread local storage)     
+        
+        call build.bat /M out /N gx /G /C /R /X current    
+      shell: cmd
+
+      # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
+      # On ARM32 we've got to specify the list of standard libraries ourselves as for some unknown reason advapi32.lib gets left off by default.
+    - name: Build libssh (arm32)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64_arm'
+      working-directory: libssh/current/build
+      run: |
+        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=${{github.workspace}}\openssl\current\ -DZLIB_ROOT:PATH=${{github.workspace}}\zlib -DWITH_DSA=ON -DCMAKE_C_STANDARD_LIBRARIES="kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib"
+        nmake
+      shell: powershell
+
+      # zlib is currently disabled for ARM builds as it doesn't currently build for ARM
+    - name: Build libssh (arm64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64_arm64'
+      working-directory: libssh/current/build
+      run: |
+        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=${{github.workspace}}\openssl\current\ -DZLIB_ROOT:PATH=${{github.workspace}}\zlib -DWITH_DSA=ON
+        nmake        
+      shell: powershell
+
+    - name: Build libdes
+      if: steps.cache-vsxx.outputs.cache-hit != 'true'
+      working-directory: libdes
+      run: |
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+        
+        call mknt.bat
+      shell: cmd
+
+    - name: Build Regina REXX (x86)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x86'
+      working-directory: rexx/regina
+      run: |
+        set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
+        set PLATFORM=x86
+        
+        nmake -f makefile.win.vc
+        if not exist regina.dll exit /b 1
+        
+        mkdir include
+        copy rexxsaa.h include
+        mkdir lib
+        copy regina.lib lib
+        
+        echo Building RexxRE
+        cd ${{github.workspace}}\rexx\rexxre
+        patch -p1 < ..\rexxre.patch
+        nmake -f Makefile.NT
+        if not exist rexxre.dll exit /b 1
+      shell: cmd
+
+    - name: Build Regina REXX (x86-64)
+      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64'
+      working-directory: rexx/regina
+      run: |
+        set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
+        set PLATFORM=x64
+        
+        nmake -f makefile.win.vc
+        if not exist regina.dll exit /b 1
+        
+        mkdir include
+        copy rexxsaa.h include
+        mkdir lib
+        copy regina.lib lib
+        
+        echo Building RexxRE
+        cd ${{github.workspace}}\rexx\rexxre
+        patch -p1 < ..\rexxre.patch
+        nmake -f Makefile.NT
+        if not exist rexxre.dll exit /b 1
+      shell: cmd
+
+#    TODO: Regina REXX 3.9.6 doesn't support being cross-compiled to
+#          an incompatible target architecture:
+#
+#       .\trexx D:\a\ckwin\ckwin\rexx\regina\common\fixrc.rexx D:\a\ckwin\ckwin\rexx\regina\rexxwinexe.rc .\rexxexe.rc 3.9.6 arm64 regina "29 Apr 2024"
+#      NMAKE : fatal error U1045: spawn failed for '.\trexx.EXE' : 0x800700d8
+#              This version of %1 is not compatible with the version of Windows
+#              you're running. Check your computer's system information and then
+#              contact the software publisher.
+#
+#    - name: Build Regina REXX (arm64)
+#      if: steps.cache-vsxx.outputs.cache-hit != 'true' && inputs.arch == 'x64_arm64'
+#      working-directory: rexx/regina
+#      run: |
+#        set REGINA_SRCDIR=${{github.workspace}}\rexx\regina
+#        set PLATFORM=arm64
+#
+#        nmake -f makefile.win.vc
+#        if not exist regina.dll exit /b 1
+#
+#        mkdir include
+#        copy rexxsaa.h include
+#        mkdir lib
+#        copy regina.lib lib
+#
+#        echo Building RexxRE
+#        cd ${{github.workspace}}\rexx\rexxre
+#        patch -p1 < ..\rexxre.patch
+#        nmake -f Makefile.NT
+#      shell: cmd

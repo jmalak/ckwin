@@ -1,0 +1,51 @@
+name: kerberos-get
+description: 'Download kerberos'
+#
+# KFW_x86: https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-i386.msi
+# KFW_x86_64: https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-amd64.msi
+# VC2003: https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip
+#
+# Kerberos for Windows - current release for modern builds
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and unpack (legacy)
+      if: inputs.id == 'legacy'
+      run: |
+        curl -LsS -o kfw-2.6-final-vc200x.zip https://ftp.zx.net.nz/pub/dev/lib/kfw/kfw-2.6-final-vc2003.zip
+        7z x kfw-2.6-final-vc200x.zip -okerberos
+        rm -f kfw-2.6-final-vc200x.zip
+        mv kerberos/kfw-2.6-final kerberos/current
+        echo "content of kerberos/current"
+        ls -l kerberos/current
+      shell: bash       
+    - name: download (x86)
+      if: inputs.id == 'x86'
+      run: |
+        curl -LsS -o kfw.msi https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-i386.msi
+      shell: bash       
+    - name: download (x64)
+      if: inputs.id == 'x64'
+      run: |
+        curl -LsS -o kfw.msi https://web.mit.edu/kerberos/dist/kfw/4.1/kfw-4.1-amd64.msi
+      shell: bash       
+    - name: install (x86/x64)
+      if: inputs.id == 'x86' || inputs.id == 'x64'
+      run: |
+        start-process msiexec -argumentlist "/a kfw.msi /qn TARGETDIR=${{github.workspace}}\kerberos\current" -wait
+        del kfw.msi
+        echo "content of kerberos/current"
+        ls -l kerberos/current
+      shell: powershell

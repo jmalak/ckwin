@@ -1,6 +1,6 @@
 name: check-file-list
 description: 'Checking files in the list'
-
+#
 inputs:
   path:
     description: 'path where to check'

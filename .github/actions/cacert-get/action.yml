@@ -1,0 +1,24 @@
+name: cacert-get
+description: 'Download cacert components'
+#
+# https://curl.se/ca/cacert.pem
+# https://www.mozilla.org/media/MPL/2.0/index.815ca599c9df.txt
+#
+runs:
+  using: composite
+  steps:
+    - name: download
+      run: |
+        curl -LsS -o ca_certs.pem https://curl.se/ca/cacert.pem
+        curl -LsS -o ca_certs.license https://www.mozilla.org/media/MPL/2.0/index.815ca599c9df.txt
+      shell: bash       
+    - name: create readme
+      run: |
+        cat << EOF > ca_certs.readme
+        ca_certs.pem was exported from the Mozilla CA Certificate Store and is licensed
+        under the MPL version 2.0.
+
+        For more information and updates, see: https://curl.se/docs/caextract.html
+        EOF
+        ls -l
+      shell: bash       

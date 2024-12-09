@@ -1,0 +1,30 @@
+name: vs200x-get
+description: 'Download vs200x'
+#
+# Expected filename: https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+#
+# Get Visual C++ 2003/2005 Toolkit + Platform SDK 2003
+#
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: download and unpack
+      run: |
+        curl -LsS -o x200x.7z https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+        7z x x200x.7z
+        mv "Microsoft Platform SDK 2003SP1" vs200x
+        rm -f x200x.7z vs200x/Bin/Cvtres.exe
+        echo "content of vs200x"
+        ls -l vs200x
+      shell: bash       

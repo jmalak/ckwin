@@ -1,0 +1,69 @@
+name: cache-vs200x-libdes
+description: Cache Optional Dependencies
+inputs:
+  arch:
+    description: 'Architecture'
+    default: ''
+    required: false
+    type: string
+  id:
+    description: 'Identification'
+    default: ''
+    required: false
+    type: string
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Cache VS200x-libdes
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-libdes
+      with:
+        path: |
+          ${{github.workspace}}\libdes\des
+          ${{github.workspace}}\libdes\Release
+          ${{github.workspace}}\libdes\Debug
+        key: vs200x-${{inputs.arch}}-libdes
+    - name: Get and unpack libdes
+      if: steps.cache-libdes.outputs.cache-hit != 'true'
+      uses: "./.github/actions/libdes-get"
+
+    - name: Build libdes(ia64)
+      if: steps.cache-libdes.outputs.cache-hit != 'true' && inputs.arch == 'ia64'
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libdes
+      run: |
+        call ${{github.workspace}}\setenv.bat
+        
+        REM Use the supplied x86 build of wart rather than building it for
+        REM itanium then fail to run it on the not-itanium build host
+        set CKB_USE_WART=yes
+        set WART=${{github.workspace}}\ckwart.exe
+        
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+
+        call mknt.bat
+      shell: cmd
+
+    - name: Build libdes(x86)
+      if: steps.cache-libdes.outputs.cache-hit != 'true' && inputs.arch == 'x86'
+      env:
+        ROOT: ${{github.workspace}}
+      working-directory: libdes
+      run: |
+        set CKB_STATIC_CRT_NT=yes
+        
+        call ${{github.workspace}}\setenv.bat
+        
+        set PATH=%PATH%;${{github.workspace}}\tools\jom
+        set MAKE=jom
+        
+        call mknt.bat
+      shell: cmd

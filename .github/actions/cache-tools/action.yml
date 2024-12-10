@@ -1,0 +1,50 @@
+name: cache-win-tools
+description: Cache Windows tools
+inputs:
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+#
+# Use JOM instead of nmake for parallel builds
+#
+# expected filename: https://download.qt.io/official_releases/jom/jom.zip
+#
+# NASM assembler
+#
+# expected filename: https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+#
+runs:
+  using: composite
+  steps:
+    - name: Load Cache Windows tools
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-tools
+      with:
+        path: |
+          ${{github.workspace}}/tools/nasm
+          ${{github.workspace}}/tools/jom
+        key: all-nasm+jom
+    - name: Get and unpack nasm
+      if: steps.cache-tools.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p tools
+        curl -LsS -o nasm-2.15.05-win32.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win32/nasm-2.15.05-win32.zip
+        7z x nasm-2.15.05-win32.zip -otools
+        rm -f nasm-2.15.05-win32.zip
+        mv tools/nasm-2.15.05 tools/nasm
+        echo "content of tools/nasm"
+        ls -l tools/nasm
+      shell: bash
+    - name: Get and unpack nasm
+      if: steps.cache-tools.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p tools/jom
+        curl -LsS -o jom.zip https://download.qt.io/official_releases/jom/jom.zip
+        7z x jom.zip -otools/jom
+        rm -f jom.zip
+        echo "content of tools/jom"
+        ls -l tools/jom
+      shell: bash

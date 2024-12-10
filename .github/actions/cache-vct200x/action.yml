@@ -1,0 +1,45 @@
+name: cache-vct200x-psdk2003-sp1
+description: Cache Visual Studio 2003/2005 Toolkit and PSDK 2003 SP1
+inputs:
+  nocache:
+    description: 'skip cache'
+    default: ''
+    required: false
+    type: string
+#
+# expected filename: https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+#
+runs:
+  using: composite
+  steps:
+    - name: Cache VCT200x
+      if: inputs.nocache != 'true'
+      uses: actions/cache@v4
+      id: cache-vct200x
+      with:
+        path: |
+          ${{github.workspace}}\vct200x
+        key: all-vct200x+psdk2003sp1
+    - name: Get and unpack Visual C++ 2003/2005 Toolkit and PSDK 2003 SP1
+      if: steps.cache-vct200x.outputs.cache-hit != 'true'
+      run: |
+        curl -LsS -o vct200x.7z https://ftp.zx.net.nz/pub/dev/VC2003Toolkit/VCT2003+PSDK2003+cvtres.7z
+        7z x vct200x.7z
+        rm -f vct200x.7z
+        mv "Microsoft Platform SDK 2003SP1" vct200x
+        rm -f vct200x\Bin\Cvtres.exe
+        echo "content of vct200x"
+        ls -l vct200x
+      shell: bash
+    - name: Setup build MSVC compiler Environment
+      run: |
+        rem add build MSVC compiler on the beginning of PATH
+        rem we need cvtres.exe from current MSVC compiler only
+        if "${{inputs.arch}}" == "x86" echo ${{github.workspace}}\vct200x\bin>> "%GITHUB_PATH%"
+        if "${{inputs.arch}}" == "ia64" echo ${{github.workspace}}\vct200x\bin\win64;${{github.workspace}}\vct200x\bin>> "%GITHUB_PATH%"
+        rem Don't want to pick up headers or libraries from current MSVC compiler
+        rem we override INCLUDE and LIB environment variables to point to build MSVC compiler
+        echo INCLUDE=${{github.workspace}}\vct200x\include>> "%GITHUB_ENV%"
+        if "${{inputs.arch}}" == "x86" echo LIB=${{github.workspace}}\vct200x\lib;%LIB%>> "%GITHUB_ENV%"
+        if "${{inputs.arch}}" == "ia64" echo LIB=${{github.workspace}}\vct200x\lib\ia64>> "%GITHUB_ENV%"
+      shell: cmd
